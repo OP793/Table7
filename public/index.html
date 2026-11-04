@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stay North — Talent</title>
+  <meta name="description" content="Describe who you need. Get a shortlist of North East talent, no job ad required." />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/">Stay North <span>Talent</span></a>
+    <nav>
+      <a href="/" aria-current="page">Employers</a>
+      <a href="/apply.html">Graduates</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <h1>Say who you need. We'll find them.</h1>
+      <p class="lede">Record a quick voice note describing the person you're hiring for. Stay North matches it against graduates who've opted in and public professional profiles across the North East, with no job ad posted.</p>
+      <p id="status" class="status" aria-live="polite">Checking status…</p>
+    </section>
+
+    <section class="panel" id="input-panel">
+      <div class="mic-row">
+        <button id="mic" class="mic" type="button" aria-pressed="false" aria-label="Start recording">
+          <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true"><path fill="currentColor" d="M12 15a4 4 0 0 0 4-4V6a4 4 0 1 0-8 0v5a4 4 0 0 0 4 4Zm6-4a6 6 0 0 1-12 0H4a8 8 0 0 0 7 7.93V22h2v-3.07A8 8 0 0 0 20 11h-2Z"/></svg>
+        </button>
+        <div class="mic-copy">
+          <strong id="mic-label">Tap to record</strong>
+          <span id="mic-hint" class="muted">Speech works in Chrome, Edge and Safari. You can also just type below.</span>
+        </div>
+      </div>
+
+      <label class="field">
+        <span class="label">What you said</span>
+        <textarea id="transcript" rows="4" placeholder="e.g. I need a graduate mechanical engineer who knows SolidWorks for our plant in Sunderland."></textarea>
+      </label>
+
+      <div class="examples" aria-label="Example prompts">
+        <span class="muted">Try an example:</span>
+        <button type="button" class="chip example">I need a graduate mechanical engineer who knows SolidWorks for our plant in Sunderland.</button>
+        <button type="button" class="chip example">Looking for a junior software developer with React and Node for our Newcastle office, ideally with some AWS.</button>
+        <button type="button" class="chip example">We want a data analyst graduate comfortable with Python and Power BI, based around Durham or Teesside.</button>
+      </div>
+
+      <div class="actions">
+        <button id="find" class="primary" type="button">Find people</button>
+        <span id="step" class="muted" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section class="panel hidden" id="spec-panel">
+      <div class="panel-head">
+        <h2>What we understood</h2>
+        <span id="spec-mode" class="badge subtle"></span>
+      </div>
+      <p id="spec-summary" class="muted"></p>
+      <div id="spec-chips" class="chips"></div>
+    </section>
+
+    <section id="results" class="hidden">
+      <div class="panel-head">
+        <h2>Shortlist</h2>
+        <span id="counts" class="muted"></span>
+      </div>
+      <p id="pdl-note" class="muted small"></p>
+      <div id="cards" class="cards"></div>
+    </section>
+  </main>
+
+  <footer class="foot muted small">
+    Candidates come from graduates who opted in on this site, People Data Labs, and public LinkedIn profiles found through Exa's search API. Anyone contacted is told how we found them and can opt out.
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

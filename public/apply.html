@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stay North — Talent</title>
+  <meta name="description" content="Upload your CV once and let North East employers find you." />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="/">Stay North <span>Talent</span></a>
+    <nav>
+      <a href="/">Employers</a>
+      <a href="/apply.html" aria-current="page">Graduates</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <h1>Stay in the North East. Let the jobs come to you.</h1>
+      <p class="lede">Upload your CV once. When a local employer describes a role you fit, you'll be on their shortlist, with no job boards and no endless applications.</p>
+    </section>
+
+    <section class="panel" id="import-panel">
+      <div class="panel-head">
+        <h2>Bring your LinkedIn profile</h2>
+      </div>
+      <div class="import-grid">
+        <div class="import-option">
+          <h3>Use your real profile</h3>
+          <ol class="steps-list">
+            <li>Open your profile on LinkedIn.</li>
+            <li>Click <strong>More</strong>, then <strong>Save to PDF</strong>.</li>
+            <li>Upload that PDF in the form below.</li>
+          </ol>
+          <p class="muted small">This uses LinkedIn's own export, so nothing is copied without you choosing to share it.</p>
+        </div>
+        <div class="import-option">
+          <h3>Try the demo import <span class="badge sample">Demo</span></h3>
+          <p class="muted small">See how a one-click import could work. This fills in a fictional sample profile. It does not connect to LinkedIn or read any real profile.</p>
+          <label class="consent">
+            <input id="demo-consent" type="checkbox" />
+            <span>Add the fictional demo profile to the Stay North pool so employers can see it.</span>
+          </label>
+          <button id="demo-import" class="primary" type="button">Run demo import</button>
+          <ul id="demo-steps" class="progress hidden" aria-live="polite"></ul>
+          <p id="demo-error" class="error hidden" role="alert"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <form id="apply-form" novalidate>
+        <label class="field">
+          <span class="label">Your CV <span class="muted">(PDF, DOCX or TXT, up to 5 MB)</span></span>
+          <input id="cv" name="cv" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" required />
+          <span class="hint muted small">Tip: you can upload your LinkedIn profile via More → Save to PDF.</span>
+        </label>
+
+        <label class="field">
+          <span class="label">Email</span>
+          <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+          <span class="hint muted small">Employers use this to get in touch. We only share it with employers whose roles you match.</span>
+        </label>
+
+        <label class="field">
+          <span class="label">LinkedIn URL <span class="muted">(optional)</span></span>
+          <input id="linkedin" name="linkedin_url" type="url" placeholder="https://www.linkedin.com/in/your-name" />
+        </label>
+
+        <label class="consent">
+          <input id="consent" name="consent" type="checkbox" value="true" required />
+          <span>I agree to Stay North storing a summary of my CV and sharing it with North East employers. I can ask for it to be removed at any time.</span>
+        </label>
+
+        <div class="actions">
+          <button id="submit" class="primary" type="submit">Upload CV</button>
+          <span id="apply-step" class="muted" aria-live="polite"></span>
+        </div>
+        <p id="apply-error" class="error hidden" role="alert"></p>
+      </form>
+    </section>
+
+    <section id="profile" class="panel hidden">
+      <div class="panel-head">
+        <h2>Here's what employers will see</h2>
+        <span id="profile-mode" class="badge subtle"></span>
+      </div>
+      <div id="profile-card"></div>
+      <p class="muted small">We only keep this summary and the time you agreed, never the file itself.</p>
+    </section>
+  </main>
+
+  <footer class="foot muted small">
+    Your profile is only shown to employers searching for roles you fit. Email hello@staynorth.example to be removed.
+  </footer>
+
+  <script src="/apply.js"></script>
+</body>
+</html>
