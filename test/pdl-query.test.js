@@ -115,10 +115,36 @@ test("normaliseExaResult maps a public profile result", async () => {
     highlights: ["Design Engineer at Tyne Fabrications in Gateshead using SolidWorks and FEA."],
   });
   assert.equal(c.name, "Jane Smith");
-  assert.equal(c.headline, "Design Engineer · Tyne Fabrications");
+  assert.equal(c.headline, "Design Engineer at Tyne Fabrications in Gateshead using SolidWorks and FEA.");
   assert.equal(c.linkedin_url, "https://www.linkedin.com/in/jane-smith-123");
   assert.equal(c.location, "Gateshead");
   assert.ok(c.skills.includes("solidworks"));
   assert.equal(c.source, "exa");
   assert.ok(c.id.startsWith("exa-"));
+});
+
+test("normaliseExaResult reads the person entity when present", async () => {
+  const { normaliseExaResult } = await import("../lib/exa.js");
+  const c = normaliseExaResult({
+    id: "x1",
+    url: "https://uk.linkedin.com/in/test-person",
+    title: "Test Person",
+    highlights: ["# Test Person\n\nMechanical engineer using SolidWorks in Sunderland.\n\nSunderland, England"],
+    entities: [{
+      type: "person",
+      properties: {
+        name: "Test Person",
+        location: "Sunderland, England, United Kingdom",
+        workHistory: [{ title: "Design Engineer", company: { name: "Acme" }, dates: { from: "2025-01-01", to: null } }],
+        educationHistory: [{ degree: "BEng Mechanical Engineering", institution: { name: "University of Sunderland" }, dates: { from: "2021", to: "2024" } }],
+      },
+    }],
+  });
+  assert.equal(c.name, "Test Person");
+  assert.equal(c.headline, "Mechanical engineer using SolidWorks in Sunderland.");
+  assert.equal(c.location, "Sunderland, England, United Kingdom");
+  assert.deepEqual(c.experience, ["Design Engineer at Acme"]);
+  assert.equal(c.university, "University of Sunderland");
+  assert.equal(c.grad_year, "2024");
+  assert.ok(c.skills.includes("solidworks"));
 });
