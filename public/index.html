@@ -61,6 +61,15 @@
         </label>
         <p class="small"><button type="button" class="linkish example" data-text="I need a graduate mechanical engineer who knows SolidWorks for our plant in Sunderland.">Try an example</button></p>
 
+        <fieldset class="who">
+          <legend class="label">Who should we look for?</legend>
+          <div class="seg">
+            <label><input type="radio" name="who" value="any" checked /><span>Anyone</span></label>
+            <label><input type="radio" name="who" value="graduate" /><span>Recent graduates</span></label>
+            <label><input type="radio" name="who" value="student" /><span>Students for internships or placements</span></label>
+          </div>
+        </fieldset>
+
         <button id="find" class="primary wide" type="button">Find people</button>
         <p id="step" class="muted small center" aria-live="polite"></p>
       </section>
@@ -104,6 +113,14 @@
             <input id="cv" name="cv" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" required />
             <span class="hint muted small">Tip: on LinkedIn, click More, then Save to PDF, and upload that.</span>
           </label>
+
+          <fieldset class="who">
+            <legend class="label">Where are you at?</legend>
+            <div class="seg">
+              <label><input type="radio" name="stage" value="graduate" required /><span>I've graduated, or graduate this year</span></label>
+              <label><input type="radio" name="stage" value="student" /><span>I'm a student looking for an internship or placement</span></label>
+            </div>
+          </fieldset>
 
           <label class="field">
             <span class="label">Email</span>

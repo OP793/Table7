@@ -26,6 +26,7 @@
         <h3>${esc(c.name)}<span class="src pool">signed up</span></h3>
         <p class="sub">${esc([c.headline, c.location].filter(Boolean).join(" — "))}</p>
         <dl>
+          ${row("Looking for", c.stage === "student" ? "An internship or placement" : c.stage === "graduate" ? "A graduate role" : "")}
           ${row("University", c.university)}
           ${row("Degree", c.degree)}
           ${row("Graduated", c.grad_year)}
@@ -48,12 +49,15 @@
     if (file.size > 5 * 1024 * 1024) return showError("That file's over 5 MB. Try a PDF export instead.");
     const email = $("email").value.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError("Add your email so employers can get in touch.");
+    const stage = (document.querySelector('input[name="stage"]:checked') || {}).value;
+    if (!stage) return showError("Tell us whether you've graduated or you're after an internship or placement.");
     if (!$("consent").checked) return showError("Tick the box above so we're allowed to keep your details.");
 
     const fd = new FormData();
     fd.append("cv", file);
     fd.append("consent", "true");
     fd.append("email", email);
+    fd.append("stage", stage);
     if ($("linkedin").value.trim()) fd.append("linkedin_url", $("linkedin").value.trim());
 
     submit.disabled = true;
