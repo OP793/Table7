@@ -16,3 +16,4 @@ build/
 Thumbs.db
 .vscode/
 .idea/
+*.tsbuildinfo
