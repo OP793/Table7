@@ -3,45 +3,45 @@
   const mic = $("mic");
   const micLabel = $("mic-label");
   const micHint = $("mic-hint");
+  const timer = $("timer");
   const transcript = $("transcript");
   const find = $("find");
   const step = $("step");
   const statusEl = $("status");
 
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // Only ever link out to real http(s) addresses.
+  const safeHref = (u) => (/^https?:\/\//i.test(String(u || "")) ? esc(u) : "");
 
-  /* ---------- status line ---------- */
+  /* ---------- what's switched on ---------- */
   async function loadStatus() {
     try {
-      const r = await fetch("/api/status");
-      const s = await r.json();
-      statusEl.innerHTML = [
-        `<span class="${s.claude ? "on" : "off"}"><i class="dot"></i>Claude ${s.claude ? "on" : "off"}</span>`,
-        `<span class="${s.pdl ? "on" : s.pdlDemo ? "demo" : "off"}"><i class="dot"></i>PDL ${s.pdl ? "on" : s.pdlDemo ? "demo" : "off"}</span>`,
-        `<span class="${s.exa ? "on" : "off"}"><i class="dot"></i>Exa ${s.exa ? "on" : "off"}</span>`,
-        `<span><i class="dot"></i>${s.poolSize} graduate${s.poolSize === 1 ? "" : "s"} in pool</span>`,
-      ].join("");
-      if (!s.claude) statusEl.title = "No ANTHROPIC_API_KEY: using keyword matching.";
+      const s = await (await fetch("/api/status")).json();
+      const pdl = s.pdl ? "PDL on" : s.pdlDemo ? "PDL demo" : "PDL off";
+      statusEl.textContent = `${s.poolSize} graduates signed up · matching by ${s.claude ? "Claude" : "keywords"} · ${pdl} · Exa ${s.exa ? "on" : "off"}`;
     } catch {
-      statusEl.textContent = "Status unavailable.";
+      statusEl.textContent = "Couldn't reach the server.";
     }
   }
 
-  /* ---------- speech ---------- */
+  /* ---------- voice note ---------- */
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   let rec = null;
   let listening = false;
   let finalText = "";
+  let started = 0;
+  let tick = null;
 
   if (!SR) {
     mic.disabled = true;
-    micLabel.textContent = "Voice not supported here";
-    micHint.textContent = "Type your request below instead (Firefox doesn't support speech input).";
+    micLabel.textContent = "Voice notes not supported here";
+    micHint.textContent = "Type it below instead.";
   } else {
     rec = new SR();
     rec.lang = "en-GB";
     rec.interimResults = true;
-    rec.continuous = true;
+    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    rec.continuous = !isIOS;
     rec.onresult = (e) => {
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -54,128 +54,144 @@
     rec.onerror = (e) => {
       stopListening();
       micHint.textContent = e.error === "not-allowed"
-        ? "Microphone blocked. Allow access in your browser, or type below."
-        : `Speech error (${e.error}). You can type below.`;
+        ? "Your browser blocked the microphone. Allow it, or type below."
+        : "Didn't catch that. Try again, or type below.";
     };
     rec.onend = () => { if (listening) stopListening(); };
+  }
+
+  function showTime() {
+    const secs = Math.floor((Date.now() - started) / 1000);
+    timer.textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
   }
 
   function startListening() {
     finalText = transcript.value.trim();
     listening = true;
+    started = Date.now();
+    showTime();
+    tick = setInterval(showTime, 500);
     mic.setAttribute("aria-pressed", "true");
     mic.setAttribute("aria-label", "Stop recording");
-    micLabel.textContent = "Listening… tap to stop";
-    micHint.textContent = "Describe the role, skills and where they'd be based.";
+    micLabel.textContent = "Recording — tap to stop";
+    micHint.textContent = "Take your time.";
     try { rec.start(); } catch { /* already started */ }
   }
+
   function stopListening() {
     listening = false;
+    clearInterval(tick);
+    timer.textContent = "";
     mic.setAttribute("aria-pressed", "false");
     mic.setAttribute("aria-label", "Start recording");
-    micLabel.textContent = "Tap to record";
-    micHint.textContent = "Edit the text below if anything was misheard.";
+    micLabel.textContent = "Record again";
+    micHint.textContent = "Fix anything it misheard below.";
     try { rec && rec.stop(); } catch { /* ignore */ }
   }
+
   mic.addEventListener("click", () => (listening ? stopListening() : startListening()));
 
-  /* ---------- examples ---------- */
   document.querySelectorAll(".example").forEach((b) => {
     b.addEventListener("click", () => {
-      transcript.value = b.textContent.trim();
+      transcript.value = (b.dataset.text || b.textContent).trim();
       transcript.focus();
     });
   });
 
-  /* ---------- search flow ---------- */
+  /* ---------- results ---------- */
   function setBusy(on, text) {
     find.disabled = on;
     step.textContent = text || "";
   }
 
   function renderSpec(spec, mode) {
-    $("spec-mode").textContent = mode === "claude" ? "Parsed by Claude" : "Keyword mode";
+    $("spec-mode").textContent = mode === "claude" ? "read by Claude" : "keyword mode";
     $("spec-summary").textContent = spec.summary || "";
-    const chips = [];
-    const add = (key, val) => { if (val) chips.push(`<span class="chip k"><span class="key">${esc(key)}</span>${esc(val)}</span>`); };
-    add("Role", spec.title);
-    add("Discipline", spec.discipline);
-    add("Level", spec.seniority);
-    add("Location", spec.location);
-    (spec.must_have_skills || []).forEach((s) => add("Must", s));
-    (spec.nice_to_have_skills || []).forEach((s) => add("Nice", s));
-    $("spec-chips").innerHTML = chips.join("");
+    const rows = [];
+    const row = (k, v) => { if (v) rows.push(`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`); };
+    row("Role", spec.title);
+    row("Level", spec.seniority === "any" ? "" : spec.seniority);
+    row("Where", spec.location);
+    row("Must know", (spec.must_have_skills || []).join(", "));
+    row("Bonus", (spec.nice_to_have_skills || []).join(", "));
+    $("spec-chips").innerHTML = rows.join("");
     $("spec-panel").classList.remove("hidden");
   }
 
-  function badgeFor(c) {
-    if (c.sample) return '<span class="badge sample">Sample</span>';
-    if (c.source === "pdl" && c.demo) return '<span class="badge pdl">via PDL (demo)</span>';
-    if (c.source === "pdl") return '<span class="badge pdl">via PDL</span>';
-    if (c.source === "exa") return '<span class="badge exa">via Exa</span>';
-    if (c.demo) return '<span class="badge sample">Demo import</span>';
-    return '<span class="badge pool">Opted in</span>';
+  function sourceTag(c) {
+    if (c.sample) return '<span class="src sample" title="Made-up profile for the demo">sample</span>';
+    if (c.source === "pdl" && c.demo) return '<span class="src sample" title="Made-up People Data Labs record for the demo">PDL demo</span>';
+    if (c.source === "pdl") return '<span class="src pdl" title="Found through People Data Labs">via PDL</span>';
+    if (c.source === "exa") return '<span class="src pdl" title="Public profile found through Exa search">via Exa</span>';
+    if (c.demo) return '<span class="src sample" title="Made-up profile from the LinkedIn import demo">demo import</span>';
+    return '<span class="src pool" title="Signed up on Stay North">signed up</span>';
   }
 
-  function renderResults(data) {
-    const { matches, counts, pdlNote, exaNote, mode } = data;
-    $("counts").textContent = `${matches.length} shown · ${counts.pool} from pool · ${counts.pdl} via PDL · ${counts.exa || 0} via Exa${counts.hidden ? ` · ${counts.hidden} hidden with no contact details` : ""} · ranked by ${mode === "claude" ? "Claude" : "keywords"}`;
-    $("pdl-note").textContent = [pdlNote, exaNote].filter(Boolean).join(" ");
-    const cards = $("cards");
+  function ticks(score) {
+    const on = Math.round(Math.max(0, Math.min(100, score)) / 10);
+    return Array.from({ length: 10 }, (_, i) => `<i class="${i < on ? "on" : ""}"></i>`).join("");
+  }
+
+  function renderResults({ matches, counts = {}, pdlNote, exaNote, mode }) {
+    $("counts").textContent = `${matches.length} people · ${mode === "claude" ? "ranked by Claude" : "ranked by keywords"}`;
+    // Only mention a source when that search is actually switched on.
+    const notes = [pdlNote, exaNote].filter((n) => n && !/^(PDL|Exa) off/i.test(n));
+    if (counts.hidden) notes.push(`${counts.hidden} left out because they have no contact details.`);
+    $("pdl-note").textContent = notes.join(" ");
+
+    const list = $("cards");
     if (!matches.length) {
-      cards.innerHTML = '<p class="muted">No matches found. Try broadening the description.</p>';
+      list.innerHTML = '<li class="person"><span></span><p>Nobody close enough this time. Try loosening the skills or the location.</p></li>';
     } else {
-      cards.innerHTML = matches.map((c, i) => `
-        <article class="card">
-          <div class="card-head">
-            <div>
-              <h3>${esc(c.name)}</h3>
-              <p class="sub">${esc([c.headline, c.location].filter(Boolean).join(" · "))}</p>
+      list.innerHTML = matches.map((c, i) => {
+        const href = safeHref(c.linkedin_url);
+        const profileHref = href ? "" : safeHref(c.profile_url);
+        return `
+        <li class="person">
+          <div class="rank">${i + 1}</div>
+          <div>
+            <h3>${esc(c.name)}${sourceTag(c)}</h3>
+            <p class="sub">${esc([c.headline, c.location].filter(Boolean).join(" — "))}</p>
+            <p class="reason">${esc(c.reason)}</p>
+            <p class="gaps"><b>Ask about:</b> ${esc(c.gaps)}</p>
+            <div class="links">
+              ${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ""}
+              ${href ? `<a href="${href}" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>` : ""}
+              ${profileHref ? `<a href="${profileHref}" target="_blank" rel="noopener noreferrer">Public profile ↗</a>` : ""}
             </div>
-            <div class="badges">${badgeFor(c)}</div>
+            <details class="outreach">
+              <summary>Draft a message</summary>
+              <pre id="msg-${i}">${esc(c.outreach)}</pre>
+              <button type="button" class="ghost copy" data-target="msg-${i}">Copy</button>
+            </details>
           </div>
-          <div class="score" aria-label="Fit score ${c.score} out of 100">
-            <div class="bar"><i style="width:${Math.max(2, Math.min(100, c.score))}%"></i></div><b>${c.score}</b>
+          <div class="fit" aria-label="Fit ${c.score} out of 100">
+            <b>${c.score}</b><small>/ 100 fit</small>
+            <div class="ticks" aria-hidden="true">${ticks(c.score)}</div>
           </div>
-          <p class="reason">${esc(c.reason)}</p>
-          <p class="gaps">${esc(c.gaps)}</p>
-          ${c.skills && c.skills.length ? `<div class="skills">${c.skills.slice(0, 10).map((s) => `<span class="chip">${esc(s)}</span>`).join("")}</div>` : ""}
-          <div class="card-links">
-            ${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ""}
-            ${c.linkedin_url
-              ? `<a href="${esc(c.linkedin_url)}" target="_blank" rel="noopener noreferrer">LinkedIn profile ↗</a>`
-              : c.profile_url
-                ? `<a href="${esc(c.profile_url)}" target="_blank" rel="noopener noreferrer">Public profile ↗</a>`
-                : ""}
-            ${c.university ? `<span class="muted">${esc(c.university)}${c.grad_year ? ` · ${esc(c.grad_year)}` : ""}</span>` : ""}
-          </div>
-          <details class="outreach">
-            <summary>Outreach draft</summary>
-            <pre id="msg-${i}">${esc(c.outreach)}</pre>
-            <button type="button" class="ghost copy" data-target="msg-${i}">Copy message</button>
-          </details>
-        </article>`).join("");
-      cards.querySelectorAll(".copy").forEach((b) => {
+        </li>`;
+      }).join("");
+
+      list.querySelectorAll(".copy").forEach((b) => {
         b.addEventListener("click", async () => {
-          const text = document.getElementById(b.dataset.target).textContent;
           try {
-            await navigator.clipboard.writeText(text);
+            await navigator.clipboard.writeText(document.getElementById(b.dataset.target).textContent);
             b.textContent = "Copied";
           } catch {
-            b.textContent = "Select and copy manually";
+            b.textContent = "Select it and copy";
           }
-          setTimeout(() => (b.textContent = "Copy message"), 1800);
+          setTimeout(() => (b.textContent = "Copy"), 1800);
         });
       });
     }
     $("results").classList.remove("hidden");
-    $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("spec-panel").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function postJson(url, body) {
     const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(data.error || `Request failed (${r.status})`);
+    if (!r.ok) throw new Error(data.error || `request failed (${r.status})`);
     return data;
   }
 
@@ -183,22 +199,21 @@
     const text = transcript.value.trim();
     if (!text) {
       transcript.focus();
-      step.textContent = "Say or type what you need first.";
+      step.textContent = "Tell us a bit about the role first.";
       return;
     }
     if (listening) stopListening();
     $("results").classList.add("hidden");
     $("spec-panel").classList.add("hidden");
     try {
-      setBusy(true, "Understanding the role…");
+      setBusy(true, "Reading what you said…");
       const { spec, mode } = await postJson("/api/role", { transcript: text });
       renderSpec(spec, mode);
-      setBusy(true, "Searching the pool and public profiles…");
-      const data = await postJson("/api/search", { spec });
-      renderResults(data);
+      setBusy(true, "Looking for people…");
+      renderResults(await postJson("/api/search", { spec }));
       setBusy(false, "");
     } catch (err) {
-      setBusy(false, `Something went wrong: ${err.message}`);
+      setBusy(false, `That didn't work: ${err.message}`);
     }
   });
 
