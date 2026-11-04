@@ -1,11 +1,10 @@
 import express from "express";
 import multer from "multer";
-import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { env, claudeEnabled, pdlEnabled, pdlDemo, exaEnabled } from "./lib/env.js";
+import { env, claudeEnabled, pdlEnabled, exaEnabled } from "./lib/env.js";
 import { getPool, addCandidate } from "./lib/store.js";
-import { parseRoleKeyword, prefilterPool, rankKeyword, parseCvKeyword, hasContact, isEmail } from "./lib/match.js";
+import { parseRoleKeyword, prefilterPool, rankKeyword, parseCvKeyword, hasContact, isEmail, classifyStage } from "./lib/match.js";
 import { parseRole, parseCv, rankCandidates, normaliseSpec, normaliseCandidate, fileToContent } from "./lib/llm.js";
 import { searchPdl } from "./lib/pdl.js";
 import { searchExa } from "./lib/exa.js";
@@ -24,7 +23,7 @@ const TRANSPARENCY = {
 };
 
 app.get("/api/status", (_req, res) => {
-  res.json({ claude: claudeEnabled(), pdl: pdlEnabled(), pdlDemo: pdlDemo(), exa: exaEnabled(), poolSize: getPool().length, model: env.CLAUDE_MODEL });
+  res.json({ claude: claudeEnabled(), pdl: pdlEnabled(), exa: exaEnabled(), poolSize: getPool().length, model: env.CLAUDE_MODEL });
 });
 
 app.post("/api/role", async (req, res) => {
@@ -50,17 +49,25 @@ app.post("/api/search", async (req, res) => {
   }
   const spec = normaliseSpec(req.body.spec);
 
-  // Only people an employer can actually reach make the shortlist.
-  const fullPool = getPool();
-  const pool = prefilterPool(spec, fullPool.filter(hasContact), 40);
-  let hidden = fullPool.length - fullPool.filter(hasContact).length;
+  // Only people an employer can actually reach make the shortlist, and when the
+  // employer asked for graduates or students, only people at that stage.
+  const wantStage = spec.candidate_type;
+  const stageOk = (c) => wantStage === "any" || classifyStage(c) === wantStage;
+  let hidden = 0;
+  let otherStage = 0;
+  const keep = (list) => list.filter((c) => {
+    if (!hasContact(c)) { hidden += 1; return false; }
+    if (!stageOk(c)) { otherStage += 1; return false; }
+    return true;
+  });
+
+  const pool = prefilterPool(spec, keep(getPool()), 40);
   const [{ records: pdlRecords, note: pdlNote }, { records: exaRecords, note: exaNote }] = await Promise.all([
     searchPdl(spec, env.PDL_SIZE),
-    searchExa(spec, env.EXA_SIZE),
+    // A stage filter drops some results, so ask Exa for more to keep the list useful.
+    searchExa(spec, wantStage === "any" ? env.EXA_SIZE : env.EXA_SIZE * 2),
   ]);
-  const external = [...pdlRecords, ...exaRecords];
-  const reachable = external.filter(hasContact);
-  hidden += external.length - reachable.length;
+  const reachable = keep([...pdlRecords, ...exaRecords]);
   const candidates = [...pool, ...reachable];
   const byId = new Map(candidates.map((c) => [c.id, c]));
 
@@ -83,7 +90,7 @@ app.post("/api/search", async (req, res) => {
       const line = TRANSPARENCY[c.source] || TRANSPARENCY.pool;
       const outreach = m.outreach ? `${m.outreach.trim()}\n\n${line}` : line;
       const { consent_at, ...publicFields } = c;
-      return { ...publicFields, score: m.score, reason: m.reason, gaps: m.gaps, outreach };
+      return { ...publicFields, stage: classifyStage(c), score: m.score, reason: m.reason, gaps: m.gaps, outreach };
     })
     .filter(Boolean);
 
@@ -94,7 +101,9 @@ app.post("/api/search", async (req, res) => {
       pdl: reachable.filter((c) => c.source === "pdl").length,
       exa: reachable.filter((c) => c.source === "exa").length,
       hidden,
+      other_stage: otherStage,
     },
+    candidate_type: wantStage,
     pdlNote,
     exaNote,
     mode,
@@ -112,6 +121,10 @@ app.post("/api/cv", (req, res, next) => {
   const linkedin_url = String(req.body?.linkedin_url || "").trim();
   const email = String(req.body?.email || "").trim();
   if (!isEmail(email)) return res.status(400).json({ error: "A valid email address is required so employers can contact you" });
+  const stage = String(req.body?.stage || "");
+  if (stage !== "graduate" && stage !== "student") {
+    return res.status(400).json({ error: "Say whether you've graduated or are a student looking for an internship or placement" });
+  }
 
   let content;
   try {
@@ -139,32 +152,8 @@ app.post("/api/cv", (req, res, next) => {
   }
   if (!profile) profile = normaliseCandidate(parseCvKeyword(content.text));
 
-  const candidate = addCandidate({ ...profile, email }, { linkedin_url });
+  const candidate = addCandidate({ ...profile, email, stage }, { linkedin_url });
   res.json({ candidate, mode });
-});
-
-// Demo-only "Import from LinkedIn". Never contacts LinkedIn and never reads the
-// URL: it returns one of a few fictional profiles from data/linkedin-demo.json,
-// stored with demo: true so it shows a "Demo import" badge everywhere.
-const LINKEDIN_DEMO = (() => {
-  try {
-    return JSON.parse(readFileSync(join(__dirname, "data", "linkedin-demo.json"), "utf8"));
-  } catch {
-    return [];
-  }
-})();
-let demoCursor = 0;
-
-app.post("/api/linkedin-import-demo", (req, res) => {
-  if (String(req.body?.consent) !== "true") return res.status(400).json({ error: "Consent is required" });
-  if (!LINKEDIN_DEMO.length) return res.status(500).json({ error: "Demo profiles are missing" });
-  const profile = LINKEDIN_DEMO[demoCursor % LINKEDIN_DEMO.length];
-  demoCursor += 1;
-  const candidate = addCandidate(
-    { ...normaliseCandidate(profile), discipline: profile.discipline, demo: true },
-    { linkedin_url: "" },
-  );
-  res.json({ candidate, mode: "demo" });
 });
 
 app.use((err, _req, res, _next) => {
@@ -174,5 +163,5 @@ app.use((err, _req, res, _next) => {
 
 app.listen(env.PORT, () => {
   console.log(`Stay North Talent on http://localhost:${env.PORT}`);
-  console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : pdlDemo() ? "demo (fictional records)" : "off"} · Exa: ${exaEnabled() ? `on (size ${env.EXA_SIZE})` : "off"} · pool: ${getPool().length}`);
+  console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : "off"} · Exa: ${exaEnabled() ? `on (size ${env.EXA_SIZE})` : "off"} · pool: ${getPool().length}`);
 });
