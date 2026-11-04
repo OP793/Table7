@@ -18,6 +18,7 @@
       statusEl.innerHTML = [
         `<span class="${s.claude ? "on" : "off"}"><i class="dot"></i>Claude ${s.claude ? "on" : "off"}</span>`,
         `<span class="${s.pdl ? "on" : s.pdlDemo ? "demo" : "off"}"><i class="dot"></i>PDL ${s.pdl ? "on" : s.pdlDemo ? "demo" : "off"}</span>`,
+        `<span class="${s.exa ? "on" : "off"}"><i class="dot"></i>Exa ${s.exa ? "on" : "off"}</span>`,
         `<span><i class="dot"></i>${s.poolSize} graduate${s.poolSize === 1 ? "" : "s"} in pool</span>`,
       ].join("");
       if (!s.claude) statusEl.title = "No ANTHROPIC_API_KEY: using keyword matching.";
@@ -111,13 +112,14 @@
     if (c.sample) return '<span class="badge sample">Sample</span>';
     if (c.source === "pdl" && c.demo) return '<span class="badge pdl">via PDL (demo)</span>';
     if (c.source === "pdl") return '<span class="badge pdl">via PDL</span>';
+    if (c.source === "exa") return '<span class="badge exa">via Exa</span>';
     return '<span class="badge pool">Opted in</span>';
   }
 
   function renderResults(data) {
-    const { matches, counts, pdlNote, mode } = data;
-    $("counts").textContent = `${matches.length} shown · ${counts.pool} from pool · ${counts.pdl} via PDL · ranked by ${mode === "claude" ? "Claude" : "keywords"}`;
-    $("pdl-note").textContent = pdlNote || "";
+    const { matches, counts, pdlNote, exaNote, mode } = data;
+    $("counts").textContent = `${matches.length} shown · ${counts.pool} from pool · ${counts.pdl} via PDL · ${counts.exa || 0} via Exa · ranked by ${mode === "claude" ? "Claude" : "keywords"}`;
+    $("pdl-note").textContent = [pdlNote, exaNote].filter(Boolean).join(" ");
     const cards = $("cards");
     if (!matches.length) {
       cards.innerHTML = '<p class="muted">No matches found. Try broadening the description.</p>';
@@ -138,7 +140,11 @@
           <p class="gaps">${esc(c.gaps)}</p>
           ${c.skills && c.skills.length ? `<div class="skills">${c.skills.slice(0, 10).map((s) => `<span class="chip">${esc(s)}</span>`).join("")}</div>` : ""}
           <div class="card-links">
-            ${c.linkedin_url ? `<a href="${esc(c.linkedin_url)}" target="_blank" rel="noopener noreferrer">LinkedIn profile ↗</a>` : '<span class="muted">No LinkedIn link</span>'}
+            ${c.linkedin_url
+              ? `<a href="${esc(c.linkedin_url)}" target="_blank" rel="noopener noreferrer">LinkedIn profile ↗</a>`
+              : c.profile_url
+                ? `<a href="${esc(c.profile_url)}" target="_blank" rel="noopener noreferrer">Public profile ↗</a>`
+                : '<span class="muted">No LinkedIn link</span>'}
             ${c.university ? `<span class="muted">${esc(c.university)}${c.grad_year ? ` · ${esc(c.grad_year)}` : ""}</span>` : ""}
           </div>
           <details class="outreach">
