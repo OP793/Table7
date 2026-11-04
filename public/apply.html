@@ -22,12 +22,46 @@
       <p class="lede">Upload your CV once. When a local employer describes a role you fit, you'll be on their shortlist, with no job boards and no endless applications.</p>
     </section>
 
+    <section class="panel" id="import-panel">
+      <div class="panel-head">
+        <h2>Bring your LinkedIn profile</h2>
+      </div>
+      <div class="import-grid">
+        <div class="import-option">
+          <h3>Use your real profile</h3>
+          <ol class="steps-list">
+            <li>Open your profile on LinkedIn.</li>
+            <li>Click <strong>More</strong>, then <strong>Save to PDF</strong>.</li>
+            <li>Upload that PDF in the form below.</li>
+          </ol>
+          <p class="muted small">This uses LinkedIn's own export, so nothing is copied without you choosing to share it.</p>
+        </div>
+        <div class="import-option">
+          <h3>Try the demo import <span class="badge sample">Demo</span></h3>
+          <p class="muted small">See how a one-click import could work. This fills in a fictional sample profile. It does not connect to LinkedIn or read any real profile.</p>
+          <label class="consent">
+            <input id="demo-consent" type="checkbox" />
+            <span>Add the fictional demo profile to the Stay North pool so employers can see it.</span>
+          </label>
+          <button id="demo-import" class="primary" type="button">Run demo import</button>
+          <ul id="demo-steps" class="progress hidden" aria-live="polite"></ul>
+          <p id="demo-error" class="error hidden" role="alert"></p>
+        </div>
+      </div>
+    </section>
+
     <section class="panel">
       <form id="apply-form" novalidate>
         <label class="field">
           <span class="label">Your CV <span class="muted">(PDF, DOCX or TXT, up to 5 MB)</span></span>
           <input id="cv" name="cv" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" required />
           <span class="hint muted small">Tip: you can upload your LinkedIn profile via More → Save to PDF.</span>
+        </label>
+
+        <label class="field">
+          <span class="label">Email</span>
+          <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+          <span class="hint muted small">Employers use this to get in touch. We only share it with employers whose roles you match.</span>
         </label>
 
         <label class="field">

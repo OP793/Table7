@@ -148,3 +148,25 @@ test("normaliseExaResult reads the person entity when present", async () => {
   assert.equal(c.grad_year, "2024");
   assert.ok(c.skills.includes("solidworks"));
 });
+
+test("hasContact requires an email, LinkedIn URL or profile URL", async () => {
+  const { hasContact } = await import("../lib/match.js");
+  assert.equal(hasContact({ name: "No Contact", linkedin_url: "", email: "" }), false);
+  assert.equal(hasContact({ email: "not-an-email" }), false);
+  assert.equal(hasContact({ email: "jane@example.com" }), true);
+  assert.equal(hasContact({ linkedin_url: "https://linkedin.com/in/jane" }), true);
+  assert.equal(hasContact({ profile_url: "https://example.org/jane" }), true);
+});
+
+test("normalisePdlRecord picks up a work email when present", () => {
+  const c = normalisePdlRecord({ id: "e1", full_name: "a b", work_email: "a.b@example.com" });
+  assert.equal(c.email, "a.b@example.com");
+});
+
+test("normaliseExaResult treats bare and regional linkedin.com hosts as LinkedIn", async () => {
+  const { normaliseExaResult } = await import("../lib/exa.js");
+  for (const url of ["https://linkedin.com/in/a", "https://www.linkedin.com/in/a", "https://uk.linkedin.com/in/a"]) {
+    assert.equal(normaliseExaResult({ url, title: "A" }).linkedin_url, url);
+  }
+  assert.equal(normaliseExaResult({ url: "https://notlinkedin.com/in/a", title: "A" }).linkedin_url, "");
+});
