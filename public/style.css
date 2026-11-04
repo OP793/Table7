@@ -180,6 +180,7 @@ button.chip:hover { border-color: var(--accent); }
 }
 .badge.pool { background: var(--accent-soft); color: var(--accent); }
 .badge.pdl { background: var(--info-soft); color: var(--info); }
+.badge.exa { background: var(--surface-2); color: var(--text); border: 1px solid var(--line); }
 .badge.sample { background: var(--warn-soft); color: var(--warn); }
 .badge.subtle { background: var(--surface-2); color: var(--muted); }
 

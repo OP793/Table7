@@ -90,3 +90,35 @@ test("searchPdlDemo returns labelled fictional records matching the titles", asy
   const other = searchPdlDemo({ search_titles: ["zoologist"] }, 5);
   assert.equal(other.records.length, 0);
 });
+
+test("buildExaRequest nests contents and uses the people category", async () => {
+  const { buildExaRequest } = await import("../lib/exa.js");
+  const body = buildExaRequest(spec, 5);
+  assert.equal(body.type, "auto");
+  assert.equal(body.category, "people");
+  assert.equal(body.numResults, 5);
+  assert.deepEqual(body.contents, { highlights: true });
+  assert.match(body.query, /mechanical engineer/);
+  assert.match(body.query, /Sunderland/);
+  assert.match(body.query, /solidworks/i);
+  for (const bad of ["text", "highlights", "summary", "useAutoprompt", "numSentences", "startPublishedDate"]) {
+    assert.ok(!(bad in body), `${bad} must not be top-level`);
+  }
+});
+
+test("normaliseExaResult maps a public profile result", async () => {
+  const { normaliseExaResult } = await import("../lib/exa.js");
+  const c = normaliseExaResult({
+    id: "https://www.linkedin.com/in/jane-smith-123",
+    url: "https://www.linkedin.com/in/jane-smith-123",
+    title: "Jane Smith - Design Engineer - Tyne Fabrications | LinkedIn",
+    highlights: ["Design Engineer at Tyne Fabrications in Gateshead using SolidWorks and FEA."],
+  });
+  assert.equal(c.name, "Jane Smith");
+  assert.equal(c.headline, "Design Engineer · Tyne Fabrications");
+  assert.equal(c.linkedin_url, "https://www.linkedin.com/in/jane-smith-123");
+  assert.equal(c.location, "Gateshead");
+  assert.ok(c.skills.includes("solidworks"));
+  assert.equal(c.source, "exa");
+  assert.ok(c.id.startsWith("exa-"));
+});

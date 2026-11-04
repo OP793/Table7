@@ -19,3 +19,4 @@ Thumbs.db
 
 # Stay North Talent: cached PDL responses contain personal data
 data/pdl-cache.json
+data/exa-cache.json
