@@ -88,65 +88,129 @@
     <div id="view-work" class="view hidden" role="tabpanel" aria-labelledby="tab-work">
       <section class="hero-c">
         <h1>Let North East employers <em>find you.</em></h1>
-        <p class="lede">Send your CV once. Local firms come to you.</p>
+        <p class="lede">Make a free profile once. Keep it up to date. Local firms come to you.</p>
       </section>
 
       <ol class="stepper" data-for="work">
-        <li class="current"><span>1</span>Send your CV</li>
-        <li><span>2</span>Check your profile</li>
+        <li class="current"><span>1</span>Your account</li>
+        <li><span>2</span>Your CV</li>
+        <li><span>3</span>Your profile</li>
       </ol>
 
-      <section class="panel">
-        <h2>Send your CV</h2>
-        <form id="apply-form" novalidate>
-          <label class="field">
-            <span class="label">Your CV <span class="muted">· PDF or Word</span></span>
-            <input id="cv" name="cv" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" required />
-            <span class="hint muted small">Tip: on LinkedIn, click More, then Save to PDF, and upload that.</span>
-          </label>
+      <p id="work-loading" class="muted small center">Loading…</p>
 
+      <!-- Signed out: create an account or log in -->
+      <section id="auth-panel" class="panel hidden">
+        <div class="seg" role="tablist" aria-label="Account">
+          <button type="button" role="tab" id="auth-tab-signup" aria-selected="true">Create account</button>
+          <button type="button" role="tab" id="auth-tab-login" aria-selected="false">Log in</button>
+        </div>
+        <form id="auth-form" novalidate>
+          <label class="field" id="auth-name-row">
+            <span class="label">Full name</span>
+            <input id="auth-name" name="name" type="text" autocomplete="name" />
+          </label>
           <label class="field">
             <span class="label">Email</span>
-            <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
-            <span class="hint muted small">Only shared with employers whose roles you match.</span>
+            <input id="auth-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" />
+            <span class="hint muted small" id="auth-email-hint">Employers who match you use this to get in touch.</span>
           </label>
-
           <label class="field">
-            <span class="label">LinkedIn <span class="muted">· optional</span></span>
-            <input id="linkedin" name="linkedin_url" type="url" placeholder="https://www.linkedin.com/in/your-name" />
+            <span class="label">Password</span>
+            <input id="auth-password" name="password" type="password" autocomplete="new-password" />
+            <span class="hint muted small" id="auth-password-hint">At least 8 characters.</span>
           </label>
-
-          <label class="consent">
-            <input id="consent" name="consent" type="checkbox" value="true" required />
-            <span>Stay North can keep a summary of my CV and show it to North East employers. I can ask for it to be deleted any time.</span>
-          </label>
-
-          <button id="submit" class="primary wide" type="submit">Send my CV</button>
-          <p id="apply-step" class="muted small center" aria-live="polite"></p>
-          <p id="apply-error" class="error hidden" role="alert"></p>
+          <button id="auth-submit" class="primary wide" type="submit">Create my free account</button>
+          <p id="auth-error" class="error hidden" role="alert"></p>
         </form>
       </section>
 
-      <details class="panel demo-import">
-        <summary><span class="src sample">Demo</span> No CV to hand? Try the LinkedIn import demo</summary>
-        <p class="muted small">This fills in a made-up sample profile to show how a one-click import could work. It doesn't connect to LinkedIn or read any real profile.</p>
-        <label class="consent">
-          <input id="demo-consent" type="checkbox" />
-          <span>Add the made-up demo profile to the pool so employers can see it.</span>
-        </label>
-        <button id="demo-import" class="ghost" type="button">Run demo import</button>
-        <ul id="demo-steps" class="progress hidden" aria-live="polite"></ul>
-        <p id="demo-error" class="error hidden" role="alert"></p>
-      </details>
+      <!-- Signed in -->
+      <div id="account-bar" class="account-bar hidden">
+        <span>Signed in as <b id="account-email"></b></span>
+        <button type="button" id="logout" class="linkish">Log out</button>
+      </div>
 
-      <section id="profile" class="panel hidden">
+      <section id="profile-panel" class="panel hidden">
         <div class="panel-head">
-          <h2>This is what employers will see</h2>
-          <span id="profile-mode" class="tag"></span>
+          <h2 id="profile-title">Your profile</h2>
+          <span id="profile-state" class="tag"></span>
         </div>
-        <div id="profile-card"></div>
-        <p class="muted small">Something wrong? Email hello@staynorth.example</p>
+        <p class="muted small" id="profile-intro">This is what employers see when your skills match their search. Change anything and save.</p>
+        <form id="profile-form" novalidate>
+          <div class="grid-2">
+            <label class="field"><span class="label">Full name</span><input id="p-name" type="text" autocomplete="name" /></label>
+            <label class="field"><span class="label">Town or city</span><input id="p-location" type="text" placeholder="e.g. Sunderland" /></label>
+          </div>
+          <label class="field"><span class="label">Headline</span><input id="p-headline" type="text" placeholder="e.g. MEng Mechanical Engineering graduate, Newcastle University" /></label>
+          <div class="grid-3">
+            <label class="field"><span class="label">University</span><input id="p-university" type="text" /></label>
+            <label class="field"><span class="label">Degree</span><input id="p-degree" type="text" placeholder="e.g. MEng Mechanical Engineering" /></label>
+            <label class="field"><span class="label">Graduated</span><input id="p-grad-year" type="text" inputmode="numeric" maxlength="4" placeholder="2025" /></label>
+          </div>
+          <label class="field">
+            <span class="label">Skills <span class="muted">· separate with commas</span></span>
+            <textarea id="p-skills" rows="2" placeholder="solidworks, matlab, fea"></textarea>
+          </label>
+          <label class="field">
+            <span class="label">Experience <span class="muted">· one per line, like "Intern at Nissan"</span></span>
+            <textarea id="p-experience" rows="3"></textarea>
+          </label>
+          <label class="field"><span class="label">About you</span><textarea id="p-summary" rows="3" placeholder="Two or three sentences on what you do and what you're looking for."></textarea></label>
+          <label class="field"><span class="label">LinkedIn <span class="muted">· optional</span></span><input id="p-linkedin" type="url" placeholder="https://www.linkedin.com/in/your-name" /></label>
+
+          <label class="consent">
+            <input id="p-visible" type="checkbox" checked />
+            <span><b>Show my profile to employers.</b> Untick to hide it without deleting anything.</span>
+          </label>
+          <label class="consent hidden" id="p-consent-row">
+            <input id="p-consent" type="checkbox" />
+            <span>Stay North can keep these details and show them to North East employers. I can delete them any time.</span>
+          </label>
+
+          <button id="p-save" class="primary wide" type="submit">Save my profile</button>
+          <p id="p-status" class="muted small center" aria-live="polite"></p>
+          <p id="p-error" class="error hidden" role="alert"></p>
+        </form>
       </section>
+
+      <section id="cv-panel" class="panel hidden">
+        <h2 id="cv-title">Add your CV</h2>
+        <p class="muted small" id="cv-intro">We read your CV and fill in your profile for you. You can change anything afterwards. We keep the details, not the file.</p>
+        <form id="cv-form" novalidate>
+          <label class="field">
+            <span class="label">Your CV <span class="muted">· PDF, Word or TXT, up to 5 MB</span></span>
+            <input id="cv" name="cv" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" />
+            <span class="hint muted small">Tip: on LinkedIn, click More, then Save to PDF, and upload that.</span>
+          </label>
+          <label class="field" id="cv-linkedin-row">
+            <span class="label">LinkedIn <span class="muted">· optional</span></span>
+            <input id="cv-linkedin" type="url" placeholder="https://www.linkedin.com/in/your-name" />
+          </label>
+          <label class="consent" id="cv-consent-row">
+            <input id="cv-consent" type="checkbox" />
+            <span>Stay North can keep a summary of my CV and show it to North East employers. I can delete it any time.</span>
+          </label>
+          <button id="cv-submit" class="primary wide" type="submit">Read my CV</button>
+          <p id="cv-status" class="muted small center" aria-live="polite"></p>
+          <p id="cv-error" class="error hidden" role="alert"></p>
+        </form>
+        <p class="center small" id="manual-row"><button type="button" id="manual" class="linkish">No CV to hand? Fill in your details by hand</button></p>
+      </section>
+
+      <details id="danger" class="panel danger hidden">
+        <summary>Delete my account</summary>
+        <p class="small">This removes your account and profile straight away. Employers will no longer find you. It can't be undone.</p>
+        <button type="button" id="delete-start" class="ghost">Delete my account</button>
+        <div id="delete-confirm" class="hidden">
+          <p class="small"><b>Are you sure?</b></p>
+          <div class="actions">
+            <button type="button" id="delete-yes" class="danger-btn">Yes, delete everything</button>
+            <button type="button" id="delete-no" class="ghost">Keep my account</button>
+          </div>
+        </div>
+        <p id="delete-error" class="error hidden" role="alert"></p>
+      </details>
     </div>
   </main>
 

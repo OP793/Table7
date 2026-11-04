@@ -433,19 +433,37 @@ details.outreach summary { padding: 10px 0; list-style-position: inside; }
   .person h3 { font-size: 1.15rem; }
 }
 
-/* ---------- LinkedIn import demo ---------- */
-details.demo-import > summary { cursor: pointer; font-weight: 600; list-style-position: inside; min-height: 44px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-details.demo-import > summary .src { margin: 0 6px 0 0; }
-details.demo-import[open] > summary { margin-bottom: 8px; }
-details.demo-import .consent { margin: 12px 0 14px; }
-.progress { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 6px; font-size: 0.92rem; }
-.progress li { color: var(--text-2); padding-left: 24px; position: relative; }
-.progress li::before { content: ""; position: absolute; left: 3px; top: 0.4em; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--line); }
-.progress li.active { color: var(--text); }
-.progress li.active::before { border-color: var(--yellow); border-top-color: transparent; animation: spin 0.7s linear infinite; }
-.progress li.done { color: var(--text); }
-.progress li.done::before { background: var(--yellow); border-color: var(--yellow); }
-@keyframes spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .progress li.active::before { animation: none; } }
+/* ---------- applicant account ---------- */
+input[type="text"], input[type="email"], input[type="password"] {
+  width: 100%; font: inherit; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+  -webkit-appearance: none; appearance: none;
+}
+#profile-form textarea { min-height: 0; background: var(--bg); border-color: var(--line); font-size: inherit; }
+.grid-2, .grid-3 { display: grid; gap: 0 14px; }
+.grid-2 { grid-template-columns: 1fr 1fr; }
+.grid-3 { grid-template-columns: 1fr 1fr 110px; }
+.grid-2 > *, .grid-3 > * { min-width: 0; }
+
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg-2); border-radius: 10px; padding: 4px; margin-bottom: 20px; }
+.seg button { border: none; background: none; border-radius: 7px; padding: 10px; min-height: 44px; font-weight: 600; color: var(--text-2); cursor: pointer; }
+.seg button[aria-selected="true"] { background: var(--bg); color: var(--text); box-shadow: 0 1px 3px rgba(14, 42, 82, 0.12); }
+.seg button:focus-visible { outline: 2px solid var(--navy-2); outline-offset: 1px; }
+
+.account-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 4px 12px; font-size: 0.92rem; color: var(--text-2); }
+.account-bar b { color: var(--text); font-weight: 600; word-break: break-all; }
+
+.tag.off { color: var(--text); background: var(--yellow-soft); padding: 2px 8px; border-radius: 4px; }
+#profile-intro { margin: 2px 0 18px; }
+.notice { background: var(--bg-2); border-left: 4px solid var(--yellow); padding: 10px 14px; border-radius: 6px; margin: 0 0 16px; }
+
+details.danger > summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; list-style-position: inside; color: var(--text-2); }
+details.danger[open] > summary { color: var(--text); }
+.danger-btn { background: #b3261e; color: #fff; border: none; border-radius: 8px; padding: 10px 16px; min-height: 44px; font-weight: 700; cursor: pointer; }
+.danger-btn:disabled { opacity: 0.6; }
 
 .foot .sources { flex-basis: 100%; font-size: 0.8rem; opacity: 0.65; }
+
+@media (max-width: 720px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}

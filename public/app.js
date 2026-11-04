@@ -123,7 +123,6 @@
     if (c.source === "pdl" && c.demo) return '<span class="src sample" title="Made-up People Data Labs record for the demo">PDL demo</span>';
     if (c.source === "pdl") return '<span class="src pdl" title="Found through People Data Labs">via PDL</span>';
     if (c.source === "exa") return '<span class="src pdl" title="Public profile found through Exa search">via Exa</span>';
-    if (c.demo) return '<span class="src sample" title="Made-up profile from the LinkedIn import demo">demo import</span>';
     return '<span class="src pool" title="Signed up on Stay North">signed up</span>';
   }
 

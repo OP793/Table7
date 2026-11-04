@@ -35,6 +35,7 @@ The app runs with **no keys at all**: role parsing and ranking fall back to keyw
 | `EXA_API_KEY` | Exa web search as a third candidate source | unset = Exa off |
 | `EXA_SIZE` | Exa results per search | `5` |
 | `PORT` | Web server port | `3000` |
+| `STAY_NORTH_DATA_DIR` | Folder for data files | `data/` |
 
 Keys never reach the browser. `.env` is gitignored.
 
@@ -60,9 +61,10 @@ voice note ──▶ /api/role ──▶ role spec (chips)
 - **Transparency line**: the server appends one to every outreach draft. Opted-in candidates are told they opted in; PDL candidates are told where their profile came from and how to opt out.
 - **PDL** (`lib/pdl.js`): the Elasticsearch query is built in code (`buildPdlQuery`) and only uses allowed query types. Every response is cached in `data/pdl-cache.json` keyed by the query, so repeat demos cost nothing. Any error gives zero results plus a note in the UI, with no retries.
 - **Exa** (`lib/exa.js`): raw HTTP to `POST https://api.exa.ai/search` with the `x-api-key` header, no SDK. The body is built in code from the role spec: natural-language query (titles, location, must-have skills), `type: "auto"`, `category: "people"`, `numResults`, and `contents: { highlights: true }`. Results are normalised to the candidate shape with `source: "exa"` and cached in `data/exa-cache.json`. Exa's own guidance says the `people` category retrieves public profile documents and that large-scale sourcing belongs on its async `/agent` API; this app uses the synchronous search because a shortlist of 5 fits one request. Exa's index can surface public LinkedIn profile pages. Stay North never crawls LinkedIn itself.
-- **Contactable only**: the shortlist only includes people with an email, a LinkedIn URL or a public profile URL. Anyone else is dropped before ranking, and the UI shows how many were hidden. Graduates must give an email when they send a CV. Fictional sample and demo people use `@example.com` addresses.
-- **LinkedIn import demo** (`POST /api/linkedin-import-demo`): the graduate page offers a "Try the demo import" button that animates an import and adds one of four fictional profiles from `data/linkedin-demo.json`, badged "Demo import". It never contacts LinkedIn or reads any URL. The real route is LinkedIn's own "Save to PDF" export, uploaded as a CV.
-- **CV upload** (`/api/cv`): multer in memory, 5 MB limit, consent required. PDFs go to Claude as a document block; DOCX is converted with mammoth; TXT is read as text.
+- **Contactable only**: the shortlist only includes people with an email, a LinkedIn URL or a public profile URL. Anyone else is dropped before ranking, and the UI shows how many were hidden. Applicants always have an email because it is their login. Fictional sample and demo people use `@example.com` addresses.
+- **Applicant accounts** (`lib/accounts.js`): graduates create a free account (name, email, password) on the **I'm looking for work** side, then add a CV or fill in their details by hand, and can come back any time to edit, hide or delete their profile. Passwords are stored as salted scrypt hashes using Node's built-in `crypto`. Logins use a random token in an HttpOnly cookie, and only a SHA-256 of the token is stored. Ten wrong passwords for one email locks it for 15 minutes. The account email is the contact email employers see.
+- **Where applicant data lives**: accounts in `data/accounts.json`, login sessions in `data/sessions.json`, profiles in `data/applicants.json`. All three are gitignored because they hold personal data. `data/candidates.json` now only holds the fictional sample graduates. Set `STAY_NORTH_DATA_DIR` to keep data somewhere else (the tests use this).
+- **CV upload** (`POST /api/me/cv`): multer in memory, 5 MB limit, consent required for a new profile. PDFs go to Claude as a document block; DOCX is converted with mammoth; TXT is read as text. Uploading a newer CV refreshes the profile and keeps anything the CV doesn't mention. Only the extracted details are stored, never the file.
 - **Sample data**: `data/candidates.json` starts with 20 fictional graduates flagged `sample: true`, shown with a "Sample" badge so the demo is honest.
 - **PDL demo mode**: if you can't get a PDL key, set `PDL_DEMO=true`. Nine fictional records in PDL's raw field shape go through the same normaliser and merge path, the status line says "PDL demo", and cards carry a "via PDL (demo)" badge. It is ignored as soon as a real key is set.
 
@@ -77,7 +79,13 @@ The brief asked for forced `tool_choice: {type: "tool"}`. Claude Sonnet 5.5 (and
 | `GET /api/status` | | `{ claude, pdl, poolSize, model }` |
 | `POST /api/role` | `{ transcript }` | `{ spec, mode }` |
 | `POST /api/search` | `{ spec }` | `{ matches[], counts: { pool, pdl }, pdlNote, mode }` |
-| `POST /api/cv` | multipart `cv`, `consent=true`, optional `linkedin_url` | `{ candidate, mode }` |
+| `POST /api/auth/signup` | `{ name, email, password }` | `{ account, profile: null }` + login cookie |
+| `POST /api/auth/login` | `{ email, password }` | `{ account, profile }` + login cookie |
+| `POST /api/auth/logout` | | `{ ok }` |
+| `GET /api/me` | | `{ account, profile }` (both `null` when logged out) |
+| `POST /api/me/cv` | multipart `cv`, `consent=true` for a new profile, optional `linkedin_url` | `{ profile, mode }` |
+| `PUT /api/me/profile` | profile fields, `visible`, `consent=true` for a new profile | `{ profile }` |
+| `DELETE /api/me` | | `{ ok }`; deletes the account, profile and sessions |
 
 `mode` is `"claude"` or `"keyword"` so you can see which path ran.
 
@@ -88,7 +96,7 @@ The brief asked for forced `tool_choice: {type: "tool"}`. Claude Sonnet 5.5 (and
 3. Click **Find people**. Show the chips: that's what Claude understood, no job ad written.
 4. Walk down the shortlist: score bar, one-sentence reason, gaps, skills, LinkedIn link. Point out the **Sample** badge vs **Opted in** vs **via PDL**.
 5. Expand an outreach draft, click **Copy**, and read the transparency line at the bottom.
-6. Flip the switch to **I'm looking for work**, upload a CV, add an email, tick consent, and show the extracted profile. Mention we never store the file.
+6. Flip the switch to **I'm looking for work**, create an account, upload a CV, tick consent, and show the profile it filled in. Change a skill and save. Mention we never store the file.
 7. Back on **I'm hiring**, search again: the new graduate appears in the shortlist.
 
 ## Verified / not yet verified

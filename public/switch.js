@@ -38,5 +38,5 @@
     update();
   }
   track("hiring", ["spec-panel", "results"]);
-  track("work", ["profile"]);
+  track("work", ["cv-panel", "profile-panel"]);
 })();
