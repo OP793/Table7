@@ -2,79 +2,162 @@
 <html lang="en-GB">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Stay North — Talent</title>
-  <meta name="description" content="Describe who you need. Get a shortlist of North East talent, no job ad required." />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0e2a52" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Stay North" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="apple-touch-icon" href="/icon-180.png" />
+  <link rel="icon" type="image/png" href="/icon-180.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <title>Stay North — jobs and people in the North East</title>
+  <meta name="description" content="Hiring in the North East, or looking for work here? Start here." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
   <header class="top">
-    <a class="brand" href="/">Stay North <span>Talent</span></a>
-    <nav>
-      <a href="/" aria-current="page">Employers</a>
-      <a href="/apply.html">Graduates</a>
-    </nav>
+    <a class="brand" href="/">Stay North<span>Talent</span></a>
+    <div class="switch" role="tablist" aria-label="Who are you?">
+      <button type="button" role="tab" id="tab-hiring" aria-controls="view-hiring" aria-selected="true">I'm hiring</button>
+      <button type="button" role="tab" id="tab-work" aria-controls="view-work" aria-selected="false">I'm looking for work</button>
+    </div>
   </header>
 
-  <main class="wrap">
-    <section class="hero">
-      <h1>Say who you need. We'll find them.</h1>
-      <p class="lede">Record a quick voice note describing the person you're hiring for. Stay North matches it against graduates who've opted in and public professional profiles across the North East, with no job ad posted.</p>
-      <p id="status" class="status" aria-live="polite">Checking status…</p>
-    </section>
+  <main class="single">
+    <img class="skyline" src="/bridge.svg" alt="" width="1200" height="210" />
 
-    <section class="panel" id="input-panel">
-      <div class="mic-row">
-        <button id="mic" class="mic" type="button" aria-pressed="false" aria-label="Start recording">
-          <svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true"><path fill="currentColor" d="M12 15a4 4 0 0 0 4-4V6a4 4 0 1 0-8 0v5a4 4 0 0 0 4 4Zm6-4a6 6 0 0 1-12 0H4a8 8 0 0 0 7 7.93V22h2v-3.07A8 8 0 0 0 20 11h-2Z"/></svg>
-        </button>
-        <div class="mic-copy">
-          <strong id="mic-label">Tap to record</strong>
-          <span id="mic-hint" class="muted">Speech works in Chrome, Edge and Safari. You can also just type below.</span>
+    <!-- ============ HIRING ============ -->
+    <div id="view-hiring" class="view" role="tabpanel" aria-labelledby="tab-hiring">
+      <section class="hero-c">
+        <h1>Find the right people <em>without</em> a job ad.</h1>
+        <p class="lede">Say who you need. Get a shortlist of local people.</p>
+      </section>
+
+      <ol class="stepper" data-for="hiring">
+        <li class="current"><span>1</span>Describe the role</li>
+        <li><span>2</span>What we heard</li>
+        <li><span>3</span>Shortlist</li>
+      </ol>
+
+      <section class="panel" id="input-panel">
+        <h2>Who do you need?</h2>
+
+        <div class="recorder">
+          <button id="mic" class="rec" type="button" aria-pressed="false" aria-label="Start recording">
+            <i class="light" aria-hidden="true"></i><span id="mic-label">Record a voice note</span>
+          </button>
+          <span id="timer" class="timer" aria-hidden="true"></span>
+          <span id="mic-hint" class="muted small">or type below</span>
         </div>
-      </div>
 
-      <label class="field">
-        <span class="label">What you said</span>
-        <textarea id="transcript" rows="4" placeholder="e.g. I need a graduate mechanical engineer who knows SolidWorks for our plant in Sunderland."></textarea>
-      </label>
+        <label class="field">
+          <span class="label sr-only">In your words</span>
+          <textarea id="transcript" rows="4" placeholder="e.g. A graduate mechanical engineer who knows SolidWorks, based in Sunderland."></textarea>
+        </label>
+        <p class="small"><button type="button" class="linkish example" data-text="I need a graduate mechanical engineer who knows SolidWorks for our plant in Sunderland.">Try an example</button></p>
 
-      <div class="examples" aria-label="Example prompts">
-        <span class="muted">Try an example:</span>
-        <button type="button" class="chip example">I need a graduate mechanical engineer who knows SolidWorks for our plant in Sunderland.</button>
-        <button type="button" class="chip example">Looking for a junior software developer with React and Node for our Newcastle office, ideally with some AWS.</button>
-        <button type="button" class="chip example">We want a data analyst graduate comfortable with Python and Power BI, based around Durham or Teesside.</button>
-      </div>
+        <button id="find" class="primary wide" type="button">Find people</button>
+        <p id="step" class="muted small center" aria-live="polite"></p>
+      </section>
 
-      <div class="actions">
-        <button id="find" class="primary" type="button">Find people</button>
-        <span id="step" class="muted" aria-live="polite"></span>
-      </div>
-    </section>
+      <section class="panel hidden" id="spec-panel">
+        <div class="panel-head">
+          <h2>What we heard</h2>
+          <span id="spec-mode" class="tag"></span>
+        </div>
+        <p id="spec-summary"></p>
+        <dl id="spec-chips" class="spec"></dl>
+      </section>
 
-    <section class="panel hidden" id="spec-panel">
-      <div class="panel-head">
-        <h2>What we understood</h2>
-        <span id="spec-mode" class="badge subtle"></span>
-      </div>
-      <p id="spec-summary" class="muted"></p>
-      <div id="spec-chips" class="chips"></div>
-    </section>
+      <section class="panel hidden" id="results">
+        <div class="panel-head">
+          <h2>Your shortlist</h2>
+          <span id="counts" class="tag"></span>
+        </div>
+        <p id="pdl-note" class="muted small"></p>
+        <ol id="cards" class="list"></ol>
+      </section>
+    </div>
 
-    <section id="results" class="hidden">
-      <div class="panel-head">
-        <h2>Shortlist</h2>
-        <span id="counts" class="muted"></span>
-      </div>
-      <p id="pdl-note" class="muted small"></p>
-      <div id="cards" class="cards"></div>
-    </section>
+    <!-- ============ LOOKING FOR WORK ============ -->
+    <div id="view-work" class="view hidden" role="tabpanel" aria-labelledby="tab-work">
+      <section class="hero-c">
+        <h1>Let North East employers <em>find you.</em></h1>
+        <p class="lede">Send your CV once. Local firms come to you.</p>
+      </section>
+
+      <ol class="stepper" data-for="work">
+        <li class="current"><span>1</span>Send your CV</li>
+        <li><span>2</span>Check your profile</li>
+      </ol>
+
+      <section class="panel">
+        <h2>Send your CV</h2>
+        <form id="apply-form" novalidate>
+          <label class="field">
+            <span class="label">Your CV <span class="muted">· PDF or Word</span></span>
+            <input id="cv" name="cv" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" required />
+            <span class="hint muted small">Tip: on LinkedIn, click More, then Save to PDF, and upload that.</span>
+          </label>
+
+          <label class="field">
+            <span class="label">Email</span>
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+            <span class="hint muted small">Only shared with employers whose roles you match.</span>
+          </label>
+
+          <label class="field">
+            <span class="label">LinkedIn <span class="muted">· optional</span></span>
+            <input id="linkedin" name="linkedin_url" type="url" placeholder="https://www.linkedin.com/in/your-name" />
+          </label>
+
+          <label class="consent">
+            <input id="consent" name="consent" type="checkbox" value="true" required />
+            <span>Stay North can keep a summary of my CV and show it to North East employers. I can ask for it to be deleted any time.</span>
+          </label>
+
+          <button id="submit" class="primary wide" type="submit">Send my CV</button>
+          <p id="apply-step" class="muted small center" aria-live="polite"></p>
+          <p id="apply-error" class="error hidden" role="alert"></p>
+        </form>
+      </section>
+
+      <details class="panel demo-import">
+        <summary><span class="src sample">Demo</span> No CV to hand? Try the LinkedIn import demo</summary>
+        <p class="muted small">This fills in a made-up sample profile to show how a one-click import could work. It doesn't connect to LinkedIn or read any real profile.</p>
+        <label class="consent">
+          <input id="demo-consent" type="checkbox" />
+          <span>Add the made-up demo profile to the pool so employers can see it.</span>
+        </label>
+        <button id="demo-import" class="ghost" type="button">Run demo import</button>
+        <ul id="demo-steps" class="progress hidden" aria-live="polite"></ul>
+        <p id="demo-error" class="error hidden" role="alert"></p>
+      </details>
+
+      <section id="profile" class="panel hidden">
+        <div class="panel-head">
+          <h2>This is what employers will see</h2>
+          <span id="profile-mode" class="tag"></span>
+        </div>
+        <div id="profile-card"></div>
+        <p class="muted small">Something wrong? Email hello@staynorth.example</p>
+      </section>
+    </div>
   </main>
 
-  <footer class="foot muted small">
-    Candidates come from graduates who opted in on this site, People Data Labs, and public LinkedIn profiles found through Exa's search API. Anyone contacted is told how we found them and can opt out.
+  <footer class="foot">
+    <span>Stay North · keeping graduates in the North East</span>
+    <span id="status" class="status" aria-live="polite"></span>
+    <span class="sources">People come from graduates who signed up here, People Data Labs, and public profiles found through Exa search. Anyone we contact is told how we found them and can opt out.</span>
   </footer>
 
+  <script src="/switch.js"></script>
   <script src="/app.js"></script>
+  <script src="/apply.js"></script>
 </body>
 </html>

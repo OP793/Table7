@@ -4,7 +4,7 @@ Hackathon project. A North East employer records a voice note describing who the
 
 Candidates come from two sources, merged into one shortlist:
 
-1. **Opted-in pool**: graduates upload a CV (or their LinkedIn "Save to PDF" export) on `/apply.html`. Claude extracts a structured profile. Only the profile and a consent timestamp are stored, never the file.
+1. **Opted-in pool**: graduates upload a CV (or their LinkedIn "Save to PDF" export) on the **I'm looking for work** side of the home page (`/#work`). Claude extracts a structured profile. Only the profile and a consent timestamp are stored, never the file.
 2. **People Data Labs (PDL)**: Person Search finds North East people who never signed up, usually with a LinkedIn URL.
 3. **Exa**: people search over public profiles, mostly LinkedIn pages, with name, role, education and a profile link.
 
@@ -60,7 +60,7 @@ voice note ──▶ /api/role ──▶ role spec (chips)
 - **Transparency line**: the server appends one to every outreach draft. Opted-in candidates are told they opted in; PDL candidates are told where their profile came from and how to opt out.
 - **PDL** (`lib/pdl.js`): the Elasticsearch query is built in code (`buildPdlQuery`) and only uses allowed query types. Every response is cached in `data/pdl-cache.json` keyed by the query, so repeat demos cost nothing. Any error gives zero results plus a note in the UI, with no retries.
 - **Exa** (`lib/exa.js`): raw HTTP to `POST https://api.exa.ai/search` with the `x-api-key` header, no SDK. The body is built in code from the role spec: natural-language query (titles, location, must-have skills), `type: "auto"`, `category: "people"`, `numResults`, and `contents: { highlights: true }`. Results are normalised to the candidate shape with `source: "exa"` and cached in `data/exa-cache.json`. Exa's own guidance says the `people` category retrieves public profile documents and that large-scale sourcing belongs on its async `/agent` API; this app uses the synchronous search because a shortlist of 5 fits one request. Exa's index can surface public LinkedIn profile pages. Stay North never crawls LinkedIn itself.
-- **Contactable only**: the shortlist only includes people with an email, a LinkedIn URL or a public profile URL. Anyone else is dropped before ranking, and the UI shows how many were hidden. Graduates must give an email on `/apply.html`. Fictional sample and demo people use `@example.com` addresses.
+- **Contactable only**: the shortlist only includes people with an email, a LinkedIn URL or a public profile URL. Anyone else is dropped before ranking, and the UI shows how many were hidden. Graduates must give an email when they send a CV. Fictional sample and demo people use `@example.com` addresses.
 - **LinkedIn import demo** (`POST /api/linkedin-import-demo`): the graduate page offers a "Try the demo import" button that animates an import and adds one of four fictional profiles from `data/linkedin-demo.json`, badged "Demo import". It never contacts LinkedIn or reads any URL. The real route is LinkedIn's own "Save to PDF" export, uploaded as a CV.
 - **CV upload** (`/api/cv`): multer in memory, 5 MB limit, consent required. PDFs go to Claude as a document block; DOCX is converted with mammoth; TXT is read as text.
 - **Sample data**: `data/candidates.json` starts with 20 fictional graduates flagged `sample: true`, shown with a "Sample" badge so the demo is honest.
@@ -83,13 +83,13 @@ The brief asked for forced `tool_choice: {type: "tool"}`. Claude Sonnet 5.5 (and
 
 ## Demo script (about 3 minutes)
 
-1. Open `http://localhost:3000`. Point at the status line: Claude on/off, PDL on/off, graduates in pool.
+1. Open `http://localhost:3000`. The **I'm hiring** side of the switch is open by default. Point at the status line in the footer: graduates in pool, Claude on/off, PDL on/off/demo, Exa on/off.
 2. Tap the mic and say: *"I need a graduate mechanical engineer who knows SolidWorks for our plant in Sunderland."* Show the live transcript, then edit a word to prove it's editable.
 3. Click **Find people**. Show the chips: that's what Claude understood, no job ad written.
 4. Walk down the shortlist: score bar, one-sentence reason, gaps, skills, LinkedIn link. Point out the **Sample** badge vs **Opted in** vs **via PDL**.
 5. Expand an outreach draft, click **Copy**, and read the transparency line at the bottom.
-6. Switch to **Graduates**, upload a CV, tick consent, and show the extracted profile. Mention we never store the file.
-7. Back on **Employers**, search again: the new graduate appears in the shortlist.
+6. Flip the switch to **I'm looking for work**, upload a CV, add an email, tick consent, and show the extracted profile. Mention we never store the file.
+7. Back on **I'm hiring**, search again: the new graduate appears in the shortlist.
 
 ## Verified / not yet verified
 
