@@ -15,7 +15,7 @@ async function load() {
     if (existsSync(bundled)) cpSync(bundled, TMP_DATA, { recursive: true });
   }
   // Must be set before server.js (and lib/store.js) are first imported.
-  process.env.STAY_NORTH_DATA_DIR = TMP_DATA;
+  process.env.NORTHERN_BEACON_DATA_DIR = TMP_DATA;
   const { default: app } = await import("../../server.js");
   return serverless(app, { binary: true });
 }

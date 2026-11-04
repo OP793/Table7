@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 // Point the store at a throwaway folder before the modules load.
-const dir = mkdtempSync(join(tmpdir(), "stay-north-test-"));
-process.env.STAY_NORTH_DATA_DIR = dir;
+const dir = mkdtempSync(join(tmpdir(), "northern-beacon-test-"));
+process.env.NORTHERN_BEACON_DATA_DIR = dir;
 const accounts = await import("../lib/accounts.js");
 const store = await import("../lib/store.js");
 
