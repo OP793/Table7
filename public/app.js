@@ -17,7 +17,7 @@
       const s = await r.json();
       statusEl.innerHTML = [
         `<span class="${s.claude ? "on" : "off"}"><i class="dot"></i>Claude ${s.claude ? "on" : "off"}</span>`,
-        `<span class="${s.pdl ? "on" : "off"}"><i class="dot"></i>PDL ${s.pdl ? "on" : "off"}</span>`,
+        `<span class="${s.pdl ? "on" : s.pdlDemo ? "demo" : "off"}"><i class="dot"></i>PDL ${s.pdl ? "on" : s.pdlDemo ? "demo" : "off"}</span>`,
         `<span><i class="dot"></i>${s.poolSize} graduate${s.poolSize === 1 ? "" : "s"} in pool</span>`,
       ].join("");
       if (!s.claude) statusEl.title = "No ANTHROPIC_API_KEY: using keyword matching.";
@@ -109,6 +109,7 @@
 
   function badgeFor(c) {
     if (c.sample) return '<span class="badge sample">Sample</span>';
+    if (c.source === "pdl" && c.demo) return '<span class="badge pdl">via PDL (demo)</span>';
     if (c.source === "pdl") return '<span class="badge pdl">via PDL</span>';
     return '<span class="badge pool">Opted in</span>';
   }
