@@ -79,7 +79,12 @@ app.post("/api/search", async (req, res) => {
   let mode = "keyword";
   if (claudeEnabled()) {
     try {
-      ranked = await rankCandidates(spec, candidates);
+      // On Netlify the request has ~10 s, so Claude only sees the 12 best keyword matches.
+      const onHosted = Boolean(process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME);
+      const shortlist = onHosted && candidates.length > 12
+        ? rankKeyword(spec, candidates, 12).matches.map((m) => byId.get(m.id))
+        : candidates;
+      ranked = await rankCandidates(spec, shortlist);
       mode = "claude";
     } catch (err) {
       console.error("rankCandidates failed, using keyword fallback:", err.message);

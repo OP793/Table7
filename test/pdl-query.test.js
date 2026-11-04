@@ -198,3 +198,23 @@ test("Exa headline skips location and follower-count lines", async () => {
   });
   assert.equal(c.headline, "BEng Mechanical Engineering Student");
 });
+
+test("keyword scores spread candidates out instead of tying", async () => {
+  const { rankKeyword } = await import("../lib/match.js");
+  const role = {
+    title: "Graduate Mechanical Engineer", discipline: "mechanical", seniority: "graduate",
+    must_have_skills: ["solidworks"], nice_to_have_skills: [], location: "Sunderland",
+    search_titles: ["graduate mechanical engineer", "mechanical engineer", "design engineer"], candidate_type: "any",
+  };
+  const people = [
+    { id: "a", headline: "Graduate Mechanical Engineer", location: "Sunderland, England, United Kingdom", skills: ["solidworks", "fea"], experience: ["Graduate Mechanical Engineer at X"], grad_year: "2025" },
+    { id: "b", headline: "Mechanical Engineer", location: "Gateshead", skills: ["solidworks"], experience: [], grad_year: "2018" },
+    { id: "c", headline: "Software Developer", location: "Leeds, England", skills: ["python"], experience: [] },
+    { id: "d", headline: "Design Engineer", location: "Newcastle upon Tyne", skills: [], experience: ["Design Engineer at Y"], grad_year: "2024" },
+  ];
+  const scores = rankKeyword(role, people).matches.map((m) => [m.id, m.score]);
+  const values = scores.map(([, s]) => s);
+  assert.equal(new Set(values).size, values.length, `expected distinct scores, got ${JSON.stringify(scores)}`);
+  assert.equal(scores[0][0], "a");
+  assert.equal(scores[scores.length - 1][0], "c");
+});
