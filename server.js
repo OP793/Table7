@@ -3,8 +3,12 @@ import multer from "multer";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { env, claudeEnabled, pdlEnabled, exaEnabled } from "./lib/env.js";
-import { getPool, addCandidate } from "./lib/store.js";
-import { parseRoleKeyword, prefilterPool, rankKeyword, parseCvKeyword, hasContact, isEmail, classifyStage } from "./lib/match.js";
+import { getPool, getApplicantByAccount, saveApplicant, deleteApplicantByAccount } from "./lib/store.js";
+import {
+  AccountError, SESSION_DAYS, createAccount, verifyLogin, createSession, getSessionAccount,
+  deleteSession, deleteAccount, updateAccountName, publicAccount,
+} from "./lib/accounts.js";
+import { parseRoleKeyword, prefilterPool, rankKeyword, parseCvKeyword, hasContact, classifyStage } from "./lib/match.js";
 import { parseRole, parseCv, rankCandidates, normaliseSpec, normaliseCandidate, fileToContent } from "./lib/llm.js";
 import { searchPdl } from "./lib/pdl.js";
 import { searchExa } from "./lib/exa.js";
@@ -17,7 +21,7 @@ app.use(express.static(join(__dirname, "public")));
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const TRANSPARENCY = {
-  pool: "You're receiving this because you opted in to Stay North.",
+  pool: "You're receiving this because you opted in to Northern Beacon.",
   pdl: "We found your public professional profile via People Data Labs. If you'd rather not hear from us, just say so and we won't contact you again.",
   exa: "We found your public professional profile through an Exa web search. If you'd rather not hear from us, just say so and we won't contact you again.",
 };
@@ -89,7 +93,7 @@ app.post("/api/search", async (req, res) => {
       if (!c) return null;
       const line = TRANSPARENCY[c.source] || TRANSPARENCY.pool;
       const outreach = m.outreach ? `${m.outreach.trim()}\n\n${line}` : line;
-      const { consent_at, ...publicFields } = c;
+      const { consent_at, account_id, ...publicFields } = c;
       return { ...publicFields, stage: classifyStage(c), score: m.score, reason: m.reason, gaps: m.gaps, outreach };
     })
     .filter(Boolean);
@@ -110,20 +114,109 @@ app.post("/api/search", async (req, res) => {
   });
 });
 
-app.post("/api/cv", (req, res, next) => {
+/* ------------------------------------------------------------------ */
+/* Applicant accounts                                                  */
+/* ------------------------------------------------------------------ */
+
+const COOKIE = "nb_session";
+
+function readCookie(req, name) {
+  const header = req.headers.cookie || "";
+  for (const part of header.split(";")) {
+    const [k, ...v] = part.trim().split("=");
+    if (k === name) return decodeURIComponent(v.join("="));
+  }
+  return "";
+}
+
+function setSessionCookie(req, res, token) {
+  const secure = req.secure || req.headers["x-forwarded-proto"] === "https" ? "; Secure" : "";
+  res.setHeader(
+    "Set-Cookie",
+    `${COOKIE}=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_DAYS * 86400}${secure}`,
+  );
+}
+
+function clearSessionCookie(res) {
+  res.setHeader("Set-Cookie", `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`);
+}
+
+function requireAccount(req, res, next) {
+  const account = getSessionAccount(readCookie(req, COOKIE));
+  if (!account) return res.status(401).json({ error: "Please log in again." });
+  req.account = account;
+  next();
+}
+
+// Applicants say whether they've graduated or want an internship/placement.
+// Employers can filter on it (see classifyStage in lib/match.js).
+const validStage = (v) => (v === "graduate" || v === "student" ? v : "");
+const STAGE_ERROR = "Say whether you've graduated or are a student looking for an internship or placement.";
+
+const httpUrl = (v) => {
+  const s = String(v || "").trim();
+  return /^https?:\/\/\S+$/i.test(s) ? s.slice(0, 300) : "";
+};
+
+// What the applicant sees about their own profile (no internal ids).
+function ownProfile(p) {
+  if (!p) return null;
+  const { account_id, ...rest } = p;
+  return rest;
+}
+
+function sendAccountError(res, err) {
+  if (err instanceof AccountError) return res.status(err.status).json({ error: err.message });
+  throw err;
+}
+
+app.post("/api/auth/signup", (req, res) => {
+  try {
+    const account = createAccount(req.body || {});
+    setSessionCookie(req, res, createSession(account.id));
+    res.status(201).json({ account: publicAccount(account), profile: null });
+  } catch (err) {
+    sendAccountError(res, err);
+  }
+});
+
+app.post("/api/auth/login", (req, res) => {
+  try {
+    const account = verifyLogin(req.body?.email, req.body?.password);
+    setSessionCookie(req, res, createSession(account.id));
+    res.json({ account: publicAccount(account), profile: ownProfile(getApplicantByAccount(account.id)) });
+  } catch (err) {
+    sendAccountError(res, err);
+  }
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  deleteSession(readCookie(req, COOKIE));
+  clearSessionCookie(res);
+  res.json({ ok: true });
+});
+
+app.get("/api/me", (req, res) => {
+  const account = getSessionAccount(readCookie(req, COOKIE));
+  if (!account) return res.json({ account: null, profile: null });
+  res.json({ account: publicAccount(account), profile: ownProfile(getApplicantByAccount(account.id)) });
+});
+
+// Upload or replace a CV. The fields read from it fill in (or refresh) the profile.
+app.post("/api/me/cv", requireAccount, (req, res, next) => {
   upload.single("cv")(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.code === "LIMIT_FILE_SIZE" ? "File is larger than 5 MB" : err.message });
     next();
   });
 }, async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "A CV file is required (PDF, DOCX or TXT)" });
-  if (String(req.body?.consent) !== "true") return res.status(400).json({ error: "Consent is required" });
-  const linkedin_url = String(req.body?.linkedin_url || "").trim();
-  const email = String(req.body?.email || "").trim();
-  if (!isEmail(email)) return res.status(400).json({ error: "A valid email address is required so employers can contact you" });
-  const stage = String(req.body?.stage || "");
-  if (stage !== "graduate" && stage !== "student") {
-    return res.status(400).json({ error: "Say whether you've graduated or are a student looking for an internship or placement" });
+  const existing = getApplicantByAccount(req.account.id);
+  if (!req.file) return res.status(400).json({ error: "Choose a CV file (PDF, Word or TXT)." });
+  if (!existing && String(req.body?.consent) !== "true") {
+    return res.status(400).json({ error: "Tick the consent box so we can keep your profile." });
+  }
+  const stage = validStage(req.body?.stage) || existing?.stage || "";
+  if (!stage) {
+    return res.status(400).json({ error: STAGE_ERROR });
   }
 
   let content;
@@ -133,27 +226,89 @@ app.post("/api/cv", (req, res, next) => {
     return res.status(400).json({ error: err.message });
   }
 
-  let profile;
+  let extracted;
   let mode = "keyword";
   if (claudeEnabled()) {
     try {
-      profile = await parseCv(req.file);
+      extracted = await parseCv(req.file);
       mode = "claude";
     } catch (err) {
       console.error("parseCv failed:", err.message);
       if (content.kind === "pdf") {
-        return res.status(502).json({ error: `Claude could not read this PDF: ${err.message}` });
+        return res.status(502).json({ error: `We couldn't read this PDF: ${err.message}` });
       }
     }
   } else if (content.kind === "pdf") {
     return res.status(503).json({
-      error: "PDF parsing needs ANTHROPIC_API_KEY. Add it to .env, or upload a DOCX or TXT version for keyword mode.",
+      error: "Reading PDFs needs ANTHROPIC_API_KEY on the server. Upload a Word or TXT version, or fill in your details by hand.",
     });
   }
-  if (!profile) profile = normaliseCandidate(parseCvKeyword(content.text));
+  if (!extracted) {
+    extracted = normaliseCandidate(parseCvKeyword(content.text));
+    // The keyword reader's summary is a note for developers, not something to show employers.
+    extracted.summary = "";
+  }
 
-  const candidate = addCandidate({ ...profile, email, stage }, { linkedin_url });
-  res.json({ candidate, mode });
+  // Keep what the CV doesn't say; the account's email is always the contact email.
+  const merged = { ...(existing || {}) };
+  for (const [k, v] of Object.entries(extracted)) {
+    if (Array.isArray(v) ? v.length : v) merged[k] = v;
+  }
+  const linkedin = httpUrl(req.body?.linkedin_url);
+  const profile = saveApplicant(req.account.id, {
+    ...normaliseCandidate({ ...merged, name: merged.name && merged.name !== "Unknown" ? merged.name : req.account.name }),
+    linkedin_url: linkedin || httpUrl(merged.linkedin_url),
+    email: req.account.email,
+    discipline: merged.discipline,
+    stage,
+    cv_file_name: String(req.file.originalname || "").slice(0, 120),
+    cv_read_by: mode,
+  });
+  res.json({ profile: ownProfile(profile), mode });
+});
+
+// Save edits made by hand. Creates the profile if there isn't one yet.
+app.put("/api/me/profile", requireAccount, (req, res) => {
+  const body = req.body || {};
+  const existing = getApplicantByAccount(req.account.id);
+  if (!existing && String(body.consent) !== "true") {
+    return res.status(400).json({ error: "Tick the consent box so we can keep your profile." });
+  }
+  const stage = validStage(body.stage) || existing?.stage || "";
+  if (!stage) return res.status(400).json({ error: STAGE_ERROR });
+  const list = (v, max) => (Array.isArray(v) ? v : String(v || "").split(/\n|,/))
+    .map((s) => String(s).trim().slice(0, 120))
+    .filter(Boolean)
+    .slice(0, max);
+  const clean = normaliseCandidate({
+    name: String(body.name || "").slice(0, 80) || req.account.name,
+    headline: String(body.headline || "").slice(0, 160),
+    location: String(body.location || "").slice(0, 80),
+    university: String(body.university || "").slice(0, 120),
+    degree: String(body.degree || "").slice(0, 120),
+    grad_year: String(body.grad_year || "").replace(/[^0-9]/g, "").slice(0, 4),
+    skills: list(body.skills, 30),
+    experience: list(body.experience, 15),
+    summary: String(body.summary || "").slice(0, 1200),
+  });
+  const profile = saveApplicant(req.account.id, {
+    ...(existing || {}),
+    ...clean,
+    linkedin_url: httpUrl(body.linkedin_url),
+    email: req.account.email,
+    stage,
+    visible: body.visible === undefined ? existing?.visible ?? true : body.visible === true || body.visible === "true",
+  });
+  updateAccountName(req.account.id, clean.name);
+  res.json({ profile: ownProfile(profile) });
+});
+
+// Delete the account, its profile and every login session.
+app.delete("/api/me", requireAccount, (req, res) => {
+  deleteApplicantByAccount(req.account.id);
+  deleteAccount(req.account.id);
+  clearSessionCookie(res);
+  res.json({ ok: true });
 });
 
 app.use((err, _req, res, _next) => {
@@ -162,6 +317,6 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(env.PORT, () => {
-  console.log(`Stay North Talent on http://localhost:${env.PORT}`);
+  console.log(`Northern Beacon on http://localhost:${env.PORT}`);
   console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : "off"} · Exa: ${exaEnabled() ? `on (size ${env.EXA_SIZE})` : "off"} · pool: ${getPool().length}`);
 });

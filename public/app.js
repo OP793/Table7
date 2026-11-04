@@ -122,7 +122,7 @@
   function sourceTag(c) {
     if (c.source === "pdl") return '<span class="src pdl" title="Found through People Data Labs">via PDL</span>';
     if (c.source === "exa") return '<span class="src pdl" title="Public profile found through Exa search">via Exa</span>';
-    return '<span class="src pool" title="Signed up on Stay North">signed up</span>';
+    return '<span class="src pool" title="Signed up on Northern Beacon">signed up</span>';
   }
 
   function stageTag(c) {
