@@ -21,7 +21,7 @@ app.use(express.static(join(__dirname, "public")));
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const TRANSPARENCY = {
-  pool: "You're receiving this because you opted in to Stay North.",
+  pool: "You're receiving this because you opted in to Northern Beacon.",
   pdl: "We found your public professional profile via People Data Labs. If you'd rather not hear from us, just say so and we won't contact you again.",
   exa: "We found your public professional profile through an Exa web search. If you'd rather not hear from us, just say so and we won't contact you again.",
 };
@@ -118,7 +118,7 @@ app.post("/api/search", async (req, res) => {
 /* Applicant accounts                                                  */
 /* ------------------------------------------------------------------ */
 
-const COOKIE = "sn_session";
+const COOKIE = "nb_session";
 
 function readCookie(req, name) {
   const header = req.headers.cookie || "";
@@ -317,6 +317,6 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(env.PORT, () => {
-  console.log(`Stay North Talent on http://localhost:${env.PORT}`);
+  console.log(`Northern Beacon on http://localhost:${env.PORT}`);
   console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : "off"} · Exa: ${exaEnabled() ? `on (size ${env.EXA_SIZE})` : "off"} · pool: ${getPool().length}`);
 });

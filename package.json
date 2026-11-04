@@ -1,7 +1,7 @@
 {
-  "name": "stay-north-talent",
+  "name": "northern-beacon",
   "version": "0.1.0",
-  "description": "Stay North Talent: voice-to-shortlist hiring for North East employers",
+  "description": "Northern Beacon: voice-to-shortlist hiring for North East employers",
   "private": true,
   "type": "module",
   "main": "server.js",
