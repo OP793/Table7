@@ -13,10 +13,10 @@ import { parseRole, parseCv, rankCandidates, normaliseSpec, normaliseCandidate, 
 import { searchPdl } from "./lib/pdl.js";
 import { searchExa } from "./lib/exa.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const HERE_DIR = dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(express.json({ limit: "200kb" }));
-app.use(express.static(join(__dirname, "public")));
+app.use(express.static(join(HERE_DIR, "public")));
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
