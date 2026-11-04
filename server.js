@@ -2,11 +2,12 @@ import express from "express";
 import multer from "multer";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { env, claudeEnabled, pdlEnabled } from "./lib/env.js";
+import { env, claudeEnabled, pdlEnabled, pdlDemo, exaEnabled } from "./lib/env.js";
 import { getPool, addCandidate } from "./lib/store.js";
 import { parseRoleKeyword, prefilterPool, rankKeyword, parseCvKeyword } from "./lib/match.js";
 import { parseRole, parseCv, rankCandidates, normaliseSpec, normaliseCandidate, fileToContent } from "./lib/llm.js";
 import { searchPdl } from "./lib/pdl.js";
+import { searchExa } from "./lib/exa.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -18,10 +19,11 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 const TRANSPARENCY = {
   pool: "You're receiving this because you opted in to Stay North.",
   pdl: "We found your public professional profile via People Data Labs. If you'd rather not hear from us, just say so and we won't contact you again.",
+  exa: "We found your public professional profile through an Exa web search. If you'd rather not hear from us, just say so and we won't contact you again.",
 };
 
 app.get("/api/status", (_req, res) => {
-  res.json({ claude: claudeEnabled(), pdl: pdlEnabled(), poolSize: getPool().length, model: env.CLAUDE_MODEL });
+  res.json({ claude: claudeEnabled(), pdl: pdlEnabled(), pdlDemo: pdlDemo(), exa: exaEnabled(), poolSize: getPool().length, model: env.CLAUDE_MODEL });
 });
 
 app.post("/api/role", async (req, res) => {
@@ -48,8 +50,11 @@ app.post("/api/search", async (req, res) => {
   const spec = normaliseSpec(req.body.spec);
 
   const pool = prefilterPool(spec, getPool(), 40);
-  const { records: pdlRecords, note: pdlNote } = await searchPdl(spec, env.PDL_SIZE);
-  const candidates = [...pool, ...pdlRecords];
+  const [{ records: pdlRecords, note: pdlNote }, { records: exaRecords, note: exaNote }] = await Promise.all([
+    searchPdl(spec, env.PDL_SIZE),
+    searchExa(spec, env.EXA_SIZE),
+  ]);
+  const candidates = [...pool, ...pdlRecords, ...exaRecords];
   const byId = new Map(candidates.map((c) => [c.id, c]));
 
   let ranked;
@@ -75,7 +80,7 @@ app.post("/api/search", async (req, res) => {
     })
     .filter(Boolean);
 
-  res.json({ matches, counts: { pool: pool.length, pdl: pdlRecords.length }, pdlNote, mode });
+  res.json({ matches, counts: { pool: pool.length, pdl: pdlRecords.length, exa: exaRecords.length }, pdlNote, exaNote, mode });
 });
 
 app.post("/api/cv", (req, res, next) => {
@@ -125,5 +130,5 @@ app.use((err, _req, res, _next) => {
 
 app.listen(env.PORT, () => {
   console.log(`Stay North Talent on http://localhost:${env.PORT}`);
-  console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : "off"} · pool: ${getPool().length}`);
+  console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : pdlDemo() ? "demo (fictional records)" : "off"} · Exa: ${exaEnabled() ? `on (size ${env.EXA_SIZE})` : "off"} · pool: ${getPool().length}`);
 });
