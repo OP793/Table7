@@ -23,7 +23,8 @@
     "linkedin_url": "",
     "summary": "Mechanical graduate with a year in industry doing SolidWorks design and FEA validation for structural steel assemblies.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "amelia.robson@example.com"
   },
   {
     "id": "sample-02",
@@ -49,7 +50,8 @@
     "linkedin_url": "",
     "summary": "Manufacturing-focused mechanical engineer with hands-on production line experience and CAD fixture design.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "daniel.okafor@example.com"
   },
   {
     "id": "sample-03",
@@ -75,7 +77,8 @@
     "linkedin_url": "",
     "summary": "Thermofluids-leaning mechanical graduate with CATIA and SolidWorks experience and a dissertation on heat exchanger design.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "priya.nair@example.com"
   },
   {
     "id": "sample-04",
@@ -100,7 +103,8 @@
     "linkedin_url": "",
     "summary": "Electronics graduate who has designed and brought up three PCBs during placement, with firmware in embedded C.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "liam.carr@example.com"
   },
   {
     "id": "sample-05",
@@ -126,7 +130,8 @@
     "linkedin_url": "",
     "summary": "Power systems graduate with PLC commissioning experience on port infrastructure.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "sophie.armstrong@example.com"
   },
   {
     "id": "sample-06",
@@ -151,7 +156,8 @@
     "linkedin_url": "",
     "summary": "Digital electronics graduate with FPGA project work and open-source hardware contributions.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "mohammed.alsayed@example.com"
   },
   {
     "id": "sample-07",
@@ -178,7 +184,8 @@
     "linkedin_url": "",
     "summary": "Full-stack graduate who shipped a React and Node booking system during a 12-month placement.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "ella.thompson@example.com"
   },
   {
     "id": "sample-08",
@@ -205,7 +212,8 @@
     "linkedin_url": "",
     "summary": "Backend engineer comfortable with Java services on AWS and agile delivery in a public-sector team.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "james.patterson@example.com"
   },
   {
     "id": "sample-09",
@@ -231,7 +239,8 @@
     "linkedin_url": "",
     "summary": "C# and .NET graduate with Azure experience and a focus on internal business tools.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "chloe.dixon@example.com"
   },
   {
     "id": "sample-10",
@@ -257,7 +266,8 @@
     "linkedin_url": "",
     "summary": "Civil graduate with highways and bridge site experience plus Revit and Civil 3D modelling.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "thomas.bell@example.com"
   },
   {
     "id": "sample-11",
@@ -282,7 +292,8 @@
     "linkedin_url": "",
     "summary": "Structural graduate with a year of steel detailing in Tekla and geotechnical site investigation experience.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "hannah.reed@example.com"
   },
   {
     "id": "sample-12",
@@ -307,7 +318,8 @@
     "linkedin_url": "",
     "summary": "Chemical graduate with Aspen Plus modelling and HAZOP participation on a live process plant.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "oliver.hughes@example.com"
   },
   {
     "id": "sample-13",
@@ -332,7 +344,8 @@
     "linkedin_url": "",
     "summary": "Process graduate working on hydrogen production scale-up with a strong safety focus.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "grace.wilson@example.com"
   },
   {
     "id": "sample-14",
@@ -358,7 +371,8 @@
     "linkedin_url": "",
     "summary": "Aerospace graduate with CFD and composite wing manufacturing experience from UAV design projects.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "ryan.mitchell@example.com"
   },
   {
     "id": "sample-15",
@@ -383,7 +397,8 @@
     "linkedin_url": "",
     "summary": "Aerospace graduate with propulsion test-rig experience and CATIA modelling.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "zara.ahmed@example.com"
   },
   {
     "id": "sample-16",
@@ -409,7 +424,8 @@
     "linkedin_url": "",
     "summary": "Data science graduate who built Power BI dashboards and churn models during an NHS analytics placement.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "ben.scott@example.com"
   },
   {
     "id": "sample-17",
@@ -434,7 +450,8 @@
     "linkedin_url": "",
     "summary": "Data graduate with PyTorch demand-forecasting project experience and Tableau reporting.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "megan.foster@example.com"
   },
   {
     "id": "sample-18",
@@ -459,7 +476,8 @@
     "linkedin_url": "",
     "summary": "Mechanical graduate with Inventor and AutoCAD skills from a precision machining placement.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "jack.hall@example.com"
   },
   {
     "id": "sample-19",
@@ -484,7 +502,8 @@
     "linkedin_url": "",
     "summary": "Electrical graduate with rail electrification design support experience and strong MATLAB modelling.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "aisha.begum@example.com"
   },
   {
     "id": "sample-20",
@@ -511,6 +530,7 @@
     "linkedin_url": "",
     "summary": "Python and Django graduate with small-agency experience building client web apps on AWS.",
     "source": "pool",
-    "sample": true
+    "sample": true,
+    "email": "connor.walsh@example.com"
   }
 ]
