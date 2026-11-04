@@ -18,6 +18,7 @@
     "express": "^5.3.0",
     "mammoth": "^1.13.0",
     "multer": "^2.5.0",
-    "peopledatalabs": "^14.7.0"
+    "peopledatalabs": "^14.7.0",
+    "serverless-http": "^4.0.0"
   }
 }

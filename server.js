@@ -316,7 +316,12 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: err.message || "Server error" });
 });
 
-app.listen(env.PORT, () => {
-  console.log(`Stay North Talent on http://localhost:${env.PORT}`);
-  console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : "off"} · Exa: ${exaEnabled() ? `on (size ${env.EXA_SIZE})` : "off"} · pool: ${getPool().length}`);
-});
+export default app;
+
+// On Netlify the app runs inside a function (netlify/functions/api.mjs), not as a server.
+if (!process.env.NETLIFY && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  app.listen(env.PORT, () => {
+    console.log(`Stay North Talent on http://localhost:${env.PORT}`);
+    console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : "off"} · Exa: ${exaEnabled() ? `on (size ${env.EXA_SIZE})` : "off"} · pool: ${getPool().length}`);
+  });
+}
