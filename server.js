@@ -2,7 +2,7 @@ import express from "express";
 import multer from "multer";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { env, claudeEnabled, pdlEnabled } from "./lib/env.js";
+import { env, claudeEnabled, pdlEnabled, pdlDemo } from "./lib/env.js";
 import { getPool, addCandidate } from "./lib/store.js";
 import { parseRoleKeyword, prefilterPool, rankKeyword, parseCvKeyword } from "./lib/match.js";
 import { parseRole, parseCv, rankCandidates, normaliseSpec, normaliseCandidate, fileToContent } from "./lib/llm.js";
@@ -21,7 +21,7 @@ const TRANSPARENCY = {
 };
 
 app.get("/api/status", (_req, res) => {
-  res.json({ claude: claudeEnabled(), pdl: pdlEnabled(), poolSize: getPool().length, model: env.CLAUDE_MODEL });
+  res.json({ claude: claudeEnabled(), pdl: pdlEnabled(), pdlDemo: pdlDemo(), poolSize: getPool().length, model: env.CLAUDE_MODEL });
 });
 
 app.post("/api/role", async (req, res) => {
@@ -125,5 +125,5 @@ app.use((err, _req, res, _next) => {
 
 app.listen(env.PORT, () => {
   console.log(`Stay North Talent on http://localhost:${env.PORT}`);
-  console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : "off"} · pool: ${getPool().length}`);
+  console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : pdlDemo() ? "demo (fictional records)" : "off"} · pool: ${getPool().length}`);
 });

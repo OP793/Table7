@@ -30,6 +30,7 @@ The app runs with **no keys at all**: role parsing and ranking fall back to keyw
 | `PDL_API_KEY` | People Data Labs Person Search | unset = PDL off |
 | `CLAUDE_MODEL` | Claude model id | `claude-sonnet-5-5` |
 | `PDL_SIZE` | PDL records per search (1 credit each; free plan is 100/month) | `5` |
+| `PDL_DEMO` | With no PDL key, serve fictional PDL-shaped records from `data/pdl-demo.json`, labelled "via PDL (demo)" | `false` |
 | `PORT` | Web server port | `3000` |
 
 Keys never reach the browser. `.env` is gitignored.
@@ -57,6 +58,7 @@ voice note ──▶ /api/role ──▶ role spec (chips)
 - **PDL** (`lib/pdl.js`): the Elasticsearch query is built in code (`buildPdlQuery`) and only uses allowed query types. Every response is cached in `data/pdl-cache.json` keyed by the query, so repeat demos cost nothing. Any error gives zero results plus a note in the UI, with no retries.
 - **CV upload** (`/api/cv`): multer in memory, 5 MB limit, consent required. PDFs go to Claude as a document block; DOCX is converted with mammoth; TXT is read as text.
 - **Sample data**: `data/candidates.json` starts with 20 fictional graduates flagged `sample: true`, shown with a "Sample" badge so the demo is honest.
+- **PDL demo mode**: if you can't get a PDL key, set `PDL_DEMO=true`. Nine fictional records in PDL's raw field shape go through the same normaliser and merge path, the status line says "PDL demo", and cards carry a "via PDL (demo)" badge. It is ignored as soon as a real key is set.
 
 ### A note on the Claude call
 
