@@ -157,3 +157,44 @@ test("normaliseExaResult treats bare and regional linkedin.com hosts as LinkedIn
   }
   assert.equal(normaliseExaResult({ url: "https://notlinkedin.com/in/a", title: "A" }).linkedin_url, "");
 });
+
+test("classifyStage uses self-reported stage, education dates and headline text", async () => {
+  const { classifyStage } = await import("../lib/match.js");
+  const now = 2026;
+  assert.equal(classifyStage({ stage: "student", grad_year: "2020" }, now), "student");
+  assert.equal(classifyStage({ studying: true }, now), "student");
+  assert.equal(classifyStage({ grad_year: "2027" }, now), "student");
+  assert.equal(classifyStage({ headline: "Undergraduate seeking a placement year" }, now), "student");
+  assert.equal(classifyStage({ grad_year: "2025" }, now), "graduate");
+  assert.equal(classifyStage({ grad_year: "2023" }, now), "graduate");
+  assert.equal(classifyStage({ grad_year: "2015" }, now), "experienced");
+  assert.equal(classifyStage({ headline: "Graduate Mechanical Engineer at Acme" }, now), "graduate");
+  assert.equal(classifyStage({ headline: "Mechanical Engineer" }, now), "unknown");
+});
+
+test("educationTimeline spots ongoing study and the latest end year", async () => {
+  const { educationTimeline } = await import("../lib/match.js");
+  assert.deepEqual(educationTimeline([{ from: "2024", to: null }], 2026), { studying: true, latestYear: null });
+  assert.deepEqual(educationTimeline([{ from: "2019", to: "2022" }, { from: "2022", to: "2023-06" }], 2026), { studying: false, latestYear: 2023 });
+  assert.deepEqual(educationTimeline([{ from: "2025-09", to: "2028-06" }], 2026), { studying: true, latestYear: 2028 });
+});
+
+test("student searches widen PDL titles and steer the Exa query", async () => {
+  const { buildExaRequest } = await import("../lib/exa.js");
+  const studentSpec = { ...spec, candidate_type: "student" };
+  const should = buildPdlQuery(studentSpec).query.bool.must[2].bool.should.map((s) => s.match_phrase.job_title);
+  assert.ok(should.includes("mechanical engineer intern"));
+  assert.ok(should.includes("placement student"));
+  assert.match(buildExaRequest(studentSpec, 5).query, /internship or placement/);
+  assert.match(buildExaRequest({ ...spec, candidate_type: "graduate" }, 5).query, /^recent graduate/);
+});
+
+test("Exa headline skips location and follower-count lines", async () => {
+  const { normaliseExaResult } = await import("../lib/exa.js");
+  const c = normaliseExaResult({
+    url: "https://uk.linkedin.com/in/x",
+    title: "X",
+    highlights: ["# X\n\nSunderland, England, United Kingdom (GB)\n\n54 connections • 74 followers\n\nBEng Mechanical Engineering Student"],
+  });
+  assert.equal(c.headline, "BEng Mechanical Engineering Student");
+});
