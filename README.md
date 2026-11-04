@@ -6,8 +6,9 @@ Candidates come from two sources, merged into one shortlist:
 
 1. **Opted-in pool**: graduates upload a CV (or their LinkedIn "Save to PDF" export) on `/apply.html`. Claude extracts a structured profile. Only the profile and a consent timestamp are stored, never the file.
 2. **People Data Labs (PDL)**: Person Search finds North East people who never signed up, usually with a LinkedIn URL.
+3. **Exa**: people search over public profiles, mostly LinkedIn pages, with name, role, education and a profile link.
 
-Stay North never scrapes or automates LinkedIn.
+Public LinkedIn profiles reach the shortlist through Exa's people search API, which indexes them. Stay North does not run its own LinkedIn scraper or log in to LinkedIn.
 
 ## Setup
 
