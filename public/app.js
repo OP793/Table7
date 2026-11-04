@@ -17,7 +17,7 @@
   async function loadStatus() {
     try {
       const s = await (await fetch("/api/status")).json();
-      const pdl = s.pdl ? "PDL on" : s.pdlDemo ? "PDL demo" : "PDL off";
+      const pdl = s.pdl ? "PDL on" : "PDL off";
       statusEl.textContent = `${s.poolSize} graduates signed up · matching by ${s.claude ? "Claude" : "keywords"} · ${pdl} · Exa ${s.exa ? "on" : "off"}`;
     } catch {
       statusEl.textContent = "Couldn't reach the server.";
@@ -119,11 +119,8 @@
   }
 
   function sourceTag(c) {
-    if (c.sample) return '<span class="src sample" title="Made-up profile for the demo">sample</span>';
-    if (c.source === "pdl" && c.demo) return '<span class="src sample" title="Made-up People Data Labs record for the demo">PDL demo</span>';
     if (c.source === "pdl") return '<span class="src pdl" title="Found through People Data Labs">via PDL</span>';
     if (c.source === "exa") return '<span class="src pdl" title="Public profile found through Exa search">via Exa</span>';
-    if (c.demo) return '<span class="src sample" title="Made-up profile from the LinkedIn import demo">demo import</span>';
     return '<span class="src pool" title="Signed up on Stay North">signed up</span>';
   }
 

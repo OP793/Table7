@@ -77,19 +77,6 @@ test("normalisePdlRecord maps fields and prefixes the LinkedIn URL", () => {
   assert.equal(c.source, "pdl");
 });
 
-test("searchPdlDemo returns labelled fictional records matching the titles", async () => {
-  const { searchPdlDemo } = await import("../lib/pdl.js");
-  const { records, note } = searchPdlDemo(spec, 5);
-  assert.ok(records.length > 0 && records.length <= 5);
-  for (const r of records) {
-    assert.equal(r.source, "pdl");
-    assert.equal(r.demo, true);
-    assert.ok(r.id.startsWith("pdl-demo-"));
-  }
-  assert.match(note, /PDL demo/);
-  const other = searchPdlDemo({ search_titles: ["zoologist"] }, 5);
-  assert.equal(other.records.length, 0);
-});
 
 test("buildExaRequest nests contents and uses the people category", async () => {
   const { buildExaRequest } = await import("../lib/exa.js");
