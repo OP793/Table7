@@ -26,3 +26,6 @@ data/applicants.json
 data/accounts.json
 data/sessions.json
 data/*.tmp
+
+# Local Netlify folder
+.netlify

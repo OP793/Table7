@@ -13,10 +13,10 @@ import { parseRole, parseCv, rankCandidates, normaliseSpec, normaliseCandidate, 
 import { searchPdl } from "./lib/pdl.js";
 import { searchExa } from "./lib/exa.js";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const HERE_DIR = dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(express.json({ limit: "200kb" }));
-app.use(express.static(join(__dirname, "public")));
+app.use(express.static(join(HERE_DIR, "public")));
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
@@ -79,7 +79,12 @@ app.post("/api/search", async (req, res) => {
   let mode = "keyword";
   if (claudeEnabled()) {
     try {
-      ranked = await rankCandidates(spec, candidates);
+      // On Netlify the request has ~10 s, so Claude only sees the 12 best keyword matches.
+      const onHosted = Boolean(process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME);
+      const shortlist = onHosted && candidates.length > 12
+        ? rankKeyword(spec, candidates, 12).matches.map((m) => byId.get(m.id))
+        : candidates;
+      ranked = await rankCandidates(spec, shortlist);
       mode = "claude";
     } catch (err) {
       console.error("rankCandidates failed, using keyword fallback:", err.message);
@@ -316,7 +321,12 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: err.message || "Server error" });
 });
 
-app.listen(env.PORT, () => {
-  console.log(`Northern Beacon on http://localhost:${env.PORT}`);
-  console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : "off"} · Exa: ${exaEnabled() ? `on (size ${env.EXA_SIZE})` : "off"} · pool: ${getPool().length}`);
-});
+export default app;
+
+// On Netlify the app runs inside a function (netlify/functions/api.mjs), not as a server.
+if (!process.env.NETLIFY && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  app.listen(env.PORT, () => {
+    console.log(`Northern Beacon on http://localhost:${env.PORT}`);
+    console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : "off"} · Exa: ${exaEnabled() ? `on (size ${env.EXA_SIZE})` : "off"} · pool: ${getPool().length}`);
+  });
+}
