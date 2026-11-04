@@ -249,7 +249,6 @@ textarea:focus, input:focus { outline: 2px solid var(--navy-2); outline-offset: 
 }
 .src.pool { background: var(--navy-2); color: #fff; }
 .src.pdl { background: var(--bg-2); color: var(--text); border: 1px solid var(--line); }
-.src.sample { background: var(--yellow-soft); color: var(--text); }
 
 details.outreach { margin-top: 12px; }
 details.outreach summary { cursor: pointer; font-size: 0.92rem; font-weight: 600; }
@@ -433,19 +432,5 @@ details.outreach summary { padding: 10px 0; list-style-position: inside; }
   .person h3 { font-size: 1.15rem; }
 }
 
-/* ---------- LinkedIn import demo ---------- */
-details.demo-import > summary { cursor: pointer; font-weight: 600; list-style-position: inside; min-height: 44px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-details.demo-import > summary .src { margin: 0 6px 0 0; }
-details.demo-import[open] > summary { margin-bottom: 8px; }
-details.demo-import .consent { margin: 12px 0 14px; }
-.progress { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 6px; font-size: 0.92rem; }
-.progress li { color: var(--text-2); padding-left: 24px; position: relative; }
-.progress li::before { content: ""; position: absolute; left: 3px; top: 0.4em; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--line); }
-.progress li.active { color: var(--text); }
-.progress li.active::before { border-color: var(--yellow); border-top-color: transparent; animation: spin 0.7s linear infinite; }
-.progress li.done { color: var(--text); }
-.progress li.done::before { background: var(--yellow); border-color: var(--yellow); }
-@keyframes spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .progress li.active::before { animation: none; } }
 
 .foot .sources { flex-basis: 100%; font-size: 0.8rem; opacity: 0.65; }
