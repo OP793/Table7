@@ -7,6 +7,7 @@
   let profile = null;
   let authMode = "signup";
   let manual = false; // filling in a profile by hand before one exists
+  const STAGE_MSG = "Tell us whether you've graduated or you're after an internship or placement.";
 
   async function api(method, url, body) {
     const opts = { method, headers: {}, credentials: "same-origin" };
@@ -57,6 +58,7 @@
     $("cv-submit").textContent = hasProfile ? "Update from this CV" : "Read my CV";
     show($("cv-consent-row"), !hasProfile);
     show($("cv-linkedin-row"), !hasProfile);
+    show($("cv-stage-row"), !hasProfile);
 
     // Profile panel.
     show($("p-consent-row"), !hasProfile);
@@ -83,6 +85,7 @@
     $("p-summary").value = v.summary || "";
     $("p-linkedin").value = v.linkedin_url || "";
     $("p-visible").checked = v.visible !== false;
+    for (const r of document.querySelectorAll('input[name="p-stage"]')) r.checked = r.value === v.stage;
   }
 
   function setSignedIn(data) {
@@ -149,10 +152,13 @@
     if (!file) return setError("cv-error", "Choose your CV file first.");
     if (file.size > 5 * 1024 * 1024) return setError("cv-error", "That file's over 5 MB. Try a PDF export instead.");
     if (!profile && !$("cv-consent").checked) return setError("cv-error", "Tick the box so we're allowed to keep your details.");
+    const cvStage = (document.querySelector('input[name="cv-stage"]:checked') || {}).value;
+    if (!profile && !cvStage) return setError("cv-error", STAGE_MSG);
 
     const fd = new FormData();
     fd.append("cv", file);
     fd.append("consent", "true");
+    if (cvStage) fd.append("stage", cvStage);
     if ($("cv-linkedin").value.trim()) fd.append("linkedin_url", $("cv-linkedin").value.trim());
 
     $("cv-submit").disabled = true;
@@ -194,6 +200,8 @@
     const linkedin = $("p-linkedin").value.trim();
     if (linkedin && !/^https?:\/\/\S+$/i.test(linkedin)) return setError("p-error", "LinkedIn should be a full link starting with https://");
     if (!profile && !$("p-consent").checked) return setError("p-error", "Tick the box so we're allowed to keep your details.");
+    const pStage = (document.querySelector('input[name="p-stage"]:checked') || {}).value;
+    if (!pStage) return setError("p-error", STAGE_MSG);
 
     $("p-save").disabled = true;
     try {
@@ -209,6 +217,7 @@
         summary: $("p-summary").value.trim(),
         linkedin_url: linkedin,
         visible: $("p-visible").checked,
+        stage: pStage,
         consent: "true",
       });
       profile = data.profile;

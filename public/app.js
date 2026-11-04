@@ -17,7 +17,7 @@
   async function loadStatus() {
     try {
       const s = await (await fetch("/api/status")).json();
-      const pdl = s.pdl ? "PDL on" : s.pdlDemo ? "PDL demo" : "PDL off";
+      const pdl = s.pdl ? "PDL on" : "PDL off";
       statusEl.textContent = `${s.poolSize} graduates signed up · matching by ${s.claude ? "Claude" : "keywords"} · ${pdl} · Exa ${s.exa ? "on" : "off"}`;
     } catch {
       statusEl.textContent = "Couldn't reach the server.";
@@ -112,6 +112,7 @@
     row("Role", spec.title);
     row("Level", spec.seniority === "any" ? "" : spec.seniority);
     row("Where", spec.location);
+    row("Looking for", spec.candidate_type === "graduate" ? "Recent graduates" : spec.candidate_type === "student" ? "Students for internships or placements" : "");
     row("Must know", (spec.must_have_skills || []).join(", "));
     row("Bonus", (spec.nice_to_have_skills || []).join(", "));
     $("spec-chips").innerHTML = rows.join("");
@@ -119,11 +120,15 @@
   }
 
   function sourceTag(c) {
-    if (c.sample) return '<span class="src sample" title="Made-up profile for the demo">sample</span>';
-    if (c.source === "pdl" && c.demo) return '<span class="src sample" title="Made-up People Data Labs record for the demo">PDL demo</span>';
     if (c.source === "pdl") return '<span class="src pdl" title="Found through People Data Labs">via PDL</span>';
     if (c.source === "exa") return '<span class="src pdl" title="Public profile found through Exa search">via Exa</span>';
     return '<span class="src pool" title="Signed up on Stay North">signed up</span>';
+  }
+
+  function stageTag(c) {
+    if (c.stage === "student") return '<span class="src stage" title="Current student, open to an internship or placement">student</span>';
+    if (c.stage === "graduate") return `<span class="src stage" title="Recent graduate">graduate${c.grad_year ? ` ${esc(c.grad_year)}` : ""}</span>`;
+    return "";
   }
 
   function ticks(score) {
@@ -131,11 +136,15 @@
     return Array.from({ length: 10 }, (_, i) => `<i class="${i < on ? "on" : ""}"></i>`).join("");
   }
 
-  function renderResults({ matches, counts = {}, pdlNote, exaNote, mode }) {
+  function renderResults({ matches, counts = {}, pdlNote, exaNote, mode, candidate_type }) {
     $("counts").textContent = `${matches.length} people · ${mode === "claude" ? "ranked by Claude" : "ranked by keywords"}`;
     // Only mention a source when that search is actually switched on.
     const notes = [pdlNote, exaNote].filter((n) => n && !/^(PDL|Exa) off/i.test(n));
     if (counts.hidden) notes.push(`${counts.hidden} left out because they have no contact details.`);
+    if (counts.other_stage) {
+      const want = candidate_type === "student" ? "current students" : "recent graduates";
+      notes.push(`${counts.other_stage} left out because they don't look like ${want}.`);
+    }
     $("pdl-note").textContent = notes.join(" ");
 
     const list = $("cards");
@@ -149,7 +158,7 @@
         <li class="person">
           <div class="rank">${i + 1}</div>
           <div>
-            <h3>${esc(c.name)}${sourceTag(c)}</h3>
+            <h3>${esc(c.name)}${sourceTag(c)}${stageTag(c)}</h3>
             <p class="sub">${esc([c.headline, c.location].filter(Boolean).join(" — "))}</p>
             <p class="reason">${esc(c.reason)}</p>
             <p class="gaps"><b>Ask about:</b> ${esc(c.gaps)}</p>
@@ -207,6 +216,7 @@
     try {
       setBusy(true, "Reading what you said…");
       const { spec, mode } = await postJson("/api/role", { transcript: text });
+      spec.candidate_type = (document.querySelector('input[name="who"]:checked') || {}).value || "any";
       renderSpec(spec, mode);
       setBusy(true, "Looking for people…");
       renderResults(await postJson("/api/search", { spec }));

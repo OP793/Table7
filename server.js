@@ -2,13 +2,13 @@ import express from "express";
 import multer from "multer";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { env, claudeEnabled, pdlEnabled, pdlDemo, exaEnabled } from "./lib/env.js";
+import { env, claudeEnabled, pdlEnabled, exaEnabled } from "./lib/env.js";
 import { getPool, getApplicantByAccount, saveApplicant, deleteApplicantByAccount } from "./lib/store.js";
 import {
   AccountError, SESSION_DAYS, createAccount, verifyLogin, createSession, getSessionAccount,
   deleteSession, deleteAccount, updateAccountName, publicAccount,
 } from "./lib/accounts.js";
-import { parseRoleKeyword, prefilterPool, rankKeyword, parseCvKeyword, hasContact } from "./lib/match.js";
+import { parseRoleKeyword, prefilterPool, rankKeyword, parseCvKeyword, hasContact, classifyStage } from "./lib/match.js";
 import { parseRole, parseCv, rankCandidates, normaliseSpec, normaliseCandidate, fileToContent } from "./lib/llm.js";
 import { searchPdl } from "./lib/pdl.js";
 import { searchExa } from "./lib/exa.js";
@@ -27,7 +27,7 @@ const TRANSPARENCY = {
 };
 
 app.get("/api/status", (_req, res) => {
-  res.json({ claude: claudeEnabled(), pdl: pdlEnabled(), pdlDemo: pdlDemo(), exa: exaEnabled(), poolSize: getPool().length, model: env.CLAUDE_MODEL });
+  res.json({ claude: claudeEnabled(), pdl: pdlEnabled(), exa: exaEnabled(), poolSize: getPool().length, model: env.CLAUDE_MODEL });
 });
 
 app.post("/api/role", async (req, res) => {
@@ -53,17 +53,25 @@ app.post("/api/search", async (req, res) => {
   }
   const spec = normaliseSpec(req.body.spec);
 
-  // Only people an employer can actually reach make the shortlist.
-  const fullPool = getPool();
-  const pool = prefilterPool(spec, fullPool.filter(hasContact), 40);
-  let hidden = fullPool.length - fullPool.filter(hasContact).length;
+  // Only people an employer can actually reach make the shortlist, and when the
+  // employer asked for graduates or students, only people at that stage.
+  const wantStage = spec.candidate_type;
+  const stageOk = (c) => wantStage === "any" || classifyStage(c) === wantStage;
+  let hidden = 0;
+  let otherStage = 0;
+  const keep = (list) => list.filter((c) => {
+    if (!hasContact(c)) { hidden += 1; return false; }
+    if (!stageOk(c)) { otherStage += 1; return false; }
+    return true;
+  });
+
+  const pool = prefilterPool(spec, keep(getPool()), 40);
   const [{ records: pdlRecords, note: pdlNote }, { records: exaRecords, note: exaNote }] = await Promise.all([
     searchPdl(spec, env.PDL_SIZE),
-    searchExa(spec, env.EXA_SIZE),
+    // A stage filter drops some results, so ask Exa for more to keep the list useful.
+    searchExa(spec, wantStage === "any" ? env.EXA_SIZE : env.EXA_SIZE * 2),
   ]);
-  const external = [...pdlRecords, ...exaRecords];
-  const reachable = external.filter(hasContact);
-  hidden += external.length - reachable.length;
+  const reachable = keep([...pdlRecords, ...exaRecords]);
   const candidates = [...pool, ...reachable];
   const byId = new Map(candidates.map((c) => [c.id, c]));
 
@@ -86,7 +94,7 @@ app.post("/api/search", async (req, res) => {
       const line = TRANSPARENCY[c.source] || TRANSPARENCY.pool;
       const outreach = m.outreach ? `${m.outreach.trim()}\n\n${line}` : line;
       const { consent_at, account_id, ...publicFields } = c;
-      return { ...publicFields, score: m.score, reason: m.reason, gaps: m.gaps, outreach };
+      return { ...publicFields, stage: classifyStage(c), score: m.score, reason: m.reason, gaps: m.gaps, outreach };
     })
     .filter(Boolean);
 
@@ -97,7 +105,9 @@ app.post("/api/search", async (req, res) => {
       pdl: reachable.filter((c) => c.source === "pdl").length,
       exa: reachable.filter((c) => c.source === "exa").length,
       hidden,
+      other_stage: otherStage,
     },
+    candidate_type: wantStage,
     pdlNote,
     exaNote,
     mode,
@@ -137,6 +147,11 @@ function requireAccount(req, res, next) {
   req.account = account;
   next();
 }
+
+// Applicants say whether they've graduated or want an internship/placement.
+// Employers can filter on it (see classifyStage in lib/match.js).
+const validStage = (v) => (v === "graduate" || v === "student" ? v : "");
+const STAGE_ERROR = "Say whether you've graduated or are a student looking for an internship or placement.";
 
 const httpUrl = (v) => {
   const s = String(v || "").trim();
@@ -199,6 +214,10 @@ app.post("/api/me/cv", requireAccount, (req, res, next) => {
   if (!existing && String(req.body?.consent) !== "true") {
     return res.status(400).json({ error: "Tick the consent box so we can keep your profile." });
   }
+  const stage = validStage(req.body?.stage) || existing?.stage || "";
+  if (!stage) {
+    return res.status(400).json({ error: STAGE_ERROR });
+  }
 
   let content;
   try {
@@ -241,6 +260,7 @@ app.post("/api/me/cv", requireAccount, (req, res, next) => {
     linkedin_url: linkedin || httpUrl(merged.linkedin_url),
     email: req.account.email,
     discipline: merged.discipline,
+    stage,
     cv_file_name: String(req.file.originalname || "").slice(0, 120),
     cv_read_by: mode,
   });
@@ -254,6 +274,8 @@ app.put("/api/me/profile", requireAccount, (req, res) => {
   if (!existing && String(body.consent) !== "true") {
     return res.status(400).json({ error: "Tick the consent box so we can keep your profile." });
   }
+  const stage = validStage(body.stage) || existing?.stage || "";
+  if (!stage) return res.status(400).json({ error: STAGE_ERROR });
   const list = (v, max) => (Array.isArray(v) ? v : String(v || "").split(/\n|,/))
     .map((s) => String(s).trim().slice(0, 120))
     .filter(Boolean)
@@ -274,6 +296,7 @@ app.put("/api/me/profile", requireAccount, (req, res) => {
     ...clean,
     linkedin_url: httpUrl(body.linkedin_url),
     email: req.account.email,
+    stage,
     visible: body.visible === undefined ? existing?.visible ?? true : body.visible === true || body.visible === "true",
   });
   updateAccountName(req.account.id, clean.name);
@@ -295,5 +318,5 @@ app.use((err, _req, res, _next) => {
 
 app.listen(env.PORT, () => {
   console.log(`Stay North Talent on http://localhost:${env.PORT}`);
-  console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : pdlDemo() ? "demo (fictional records)" : "off"} · Exa: ${exaEnabled() ? `on (size ${env.EXA_SIZE})` : "off"} · pool: ${getPool().length}`);
+  console.log(`Claude: ${claudeEnabled() ? `on (${env.CLAUDE_MODEL})` : "off (keyword fallback)"} · PDL: ${pdlEnabled() ? `on (size ${env.PDL_SIZE})` : "off"} · Exa: ${exaEnabled() ? `on (size ${env.EXA_SIZE})` : "off"} · pool: ${getPool().length}`);
 });
